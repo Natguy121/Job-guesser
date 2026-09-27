@@ -48,7 +48,8 @@ const TIPS = {
   fod: ["Help cook simple meals with an adult.", "Bake on your own and try new recipes.", "Take cooking classes or work in a kitchen or café."],
 };
 
-// Everyone answers these 5 first. Together they cover all 20 topics once.
+// Everyone answers these 10 first. Together they cover all 20 topics twice,
+// each time against different rivals.
 const OPENERS = [
   { q: "Which of these sounds the most fun?", a: [
     ["🧪", "Doing a cool science experiment", "sci"],
@@ -75,132 +76,65 @@ const OPENERS = [
     ["🚒", "The one who rescues people in danger", "saf"],
     ["🧑‍⚖️", "The leader who makes the rules fair", "lea"],
     ["🏪", "The owner of a shop", "biz"] ] },
+  { q: "Pick a school project.", a: [
+    ["👾", "Code a simple game", "tec"],
+    ["🐹", "Study the class pet", "ani"],
+    ["🎭", "Put on a play", "prf"],
+    ["🧯", "Plan a fire drill for the class", "saf"] ] },
+  { q: "What sounds best for a free afternoon?", a: [
+    ["💎", "Grow crystals in a jar", "sci"],
+    ["🍪", "Bake cookies", "fod"],
+    ["📣", "Start a club and be its president", "lea"],
+    ["⏰", "Take apart an old clock", "mec"] ] },
+  { q: "Pick a present.", a: [
+    ["🖍️", "A giant set of markers", "art"],
+    ["🔭", "A telescope", "spc"],
+    ["💌", "A kit to make cards for kids in hospital", "car"],
+    ["🐷", "A piggy bank and a toy cash register", "biz"] ] },
+  { q: "Which club would you join?", a: [
+    ["⚽", "Soccer club", "spo"],
+    ["🧱", "Building and engineering club", "bld"],
+    ["✍️", "Writing club", "wrd"],
+    ["🩹", "First aid club", "hlp"] ] },
+  { q: "What would you like to do this summer?", a: [
+    ["🥕", "Look after a vegetable garden", "nat"],
+    ["📹", "Make videos with friends", "mda"],
+    ["🧒", "Help run a day camp for little kids", "tea"],
+    ["🧳", "Travel somewhere new", "adv"] ] },
 ];
 
-// Follow-up questions. After the openers, the survey keeps picking follow-ups
-// for your strongest topics, so every kid gets a different set of questions.
-// Answers can point to nearby topics, so the path can change as you go.
-const FOLLOWUPS = [
-  { for: "sci", q: "Which science would you most like to try?", a: [
-    ["🧪", "Mixing chemicals to make new stuff", "sci"], ["🦠", "Studying germs to stop sickness", "hlp"],
-    ["🌋", "Studying volcanoes and rocks", "nat"], ["🔭", "Looking at stars through a telescope", "spc"] ] },
-  { for: "sci", q: "In a science lab, you'd rather…", a: [
-    ["📊", "Measure everything and write down results", "sci"], ["🛠️", "Build the machine for the experiment", "bld"],
-    ["💻", "Use a computer to study the data", "tec"], ["🗣️", "Explain what you found to everyone", "tea"] ] },
-  { for: "tec", q: "What would you build with a computer?", a: [
-    ["📱", "An app people use every day", "tec"], ["🎮", "A video game", "mda"],
-    ["🤖", "A robot that helps at home", "bld"], ["💸", "An online shop", "biz"] ] },
-  { for: "tec", q: "Which computer job sounds coolest?", a: [
-    ["🛡️", "Stopping hackers", "saf"], ["🧠", "Teaching an AI to be smart", "tec"],
-    ["🎨", "Making websites look beautiful", "art"], ["🔢", "Solving puzzles with data", "sci"] ] },
-  { for: "bld", q: "What would you most like to build?", a: [
-    ["🌉", "A giant bridge", "bld"], ["🏠", "A beautiful house", "art"],
-    ["🚀", "A rocket", "spc"], ["🏎️", "A super fast car", "mec"] ] },
-  { for: "bld", q: "On a building site, you would…", a: [
-    ["📐", "Draw the plans", "bld"], ["🔨", "Use the big machines and tools", "mec"],
-    ["📋", "Be the boss who keeps it on time", "lea"], ["🦺", "Check that everyone is safe", "saf"] ] },
-  { for: "mec", q: "Which would you like to drive or fly?", a: [
-    ["✈️", "A plane", "spc"], ["🚒", "A fire truck", "saf"],
-    ["🏎️", "A race car", "spo"], ["🚜", "A tractor on a farm", "nat"] ] },
-  { for: "mec", q: "Your bike is broken. You…", a: [
-    ["🔧", "Fix it yourself", "mec"], ["🔍", "Figure out exactly why it broke", "sci"],
-    ["🛠️", "Build a better bike", "bld"], ["🤝", "Help your friend fix theirs too", "car"] ] },
-  { for: "spc", q: "In space, you would…", a: [
-    ["👩‍🚀", "Float around and do experiments", "sci"], ["🛰️", "Control the rocket from mission control", "tec"],
-    ["🔩", "Fix the space station", "bld"], ["🪐", "Explore a new planet", "adv"] ] },
-  { for: "spc", q: "Which is the coolest?", a: [
-    ["🌌", "Discovering a new galaxy", "spc"], ["✈️", "Flying a jet", "mec"],
-    ["🌱", "Growing food on Mars", "nat"], ["📸", "Filming space for a movie", "mda"] ] },
-  { for: "art", q: "What would you most like to design?", a: [
-    ["👗", "Clothes", "art"], ["🏡", "Rooms and houses", "bld"],
-    ["👾", "Video game characters", "mda"], ["🎂", "Fancy cakes", "fod"] ] },
-  { for: "art", q: "What kind of art do you love?", a: [
-    ["🖌️", "Painting and drawing", "art"], ["📷", "Taking photos", "mda"],
-    ["🎭", "Costumes for a show", "prf"], ["📚", "Pictures for books", "wrd"] ] },
-  { for: "prf", q: "On stage, you'd rather…", a: [
-    ["🎤", "Sing", "prf"], ["💃", "Dance", "spo"],
-    ["😂", "Tell funny stories", "wrd"], ["🎬", "Direct the whole show", "lea"] ] },
-  { for: "prf", q: "Pick your music job.", a: [
-    ["🎸", "Play in a band", "prf"], ["🎧", "Record and mix songs", "tec"],
-    ["🎼", "Write songs", "wrd"], ["🎹", "Teach music to kids", "tea"] ] },
-  { for: "mda", q: "Making a video, you'd be…", a: [
-    ["🎥", "Behind the camera", "mda"], ["🌟", "In front of the camera", "prf"],
-    ["✂️", "Editing it on the computer", "tec"], ["📝", "Writing the story", "wrd"] ] },
-  { for: "mda", q: "Which would you rather make?", a: [
-    ["📺", "A video channel", "mda"], ["🕹️", "A video game", "tec"],
-    ["📰", "A news report", "wrd"], ["🎞️", "A cartoon", "art"] ] },
-  { for: "wrd", q: "What would you like to write?", a: [
-    ["📖", "An adventure book", "wrd"], ["📰", "News about what's happening", "mda"],
-    ["🎬", "A play or movie script", "prf"], ["📜", "Rules that make things fair", "lea"] ] },
-  { for: "wrd", q: "Which do you love most?", a: [
-    ["📚", "Reading for hours", "wrd"], ["🌍", "Learning new languages", "adv"],
-    ["🗣️", "Debating and convincing people", "lea"], ["👶", "Reading to little kids", "tea"] ] },
-  { for: "tea", q: "Who would you like to teach?", a: [
-    ["🧒", "Little kids", "tea"], ["🏃", "A sports team", "spo"],
-    ["🎹", "Music students", "prf"], ["🐕", "Dogs learning tricks", "ani"] ] },
-  { for: "tea", q: "Your friend doesn't understand their homework. You…", a: [
-    ["✏️", "Explain it step by step", "tea"], ["💖", "Make sure they don't feel bad", "car"],
-    ["🧩", "Turn it into a game", "mda"], ["🔎", "Look it up together", "sci"] ] },
-  { for: "hlp", q: "Which health job sounds best?", a: [
-    ["🩺", "A doctor finding out what's wrong", "hlp"], ["🚑", "A paramedic rushing to help", "saf"],
-    ["🧠", "Helping people with their worries", "car"], ["🐶", "A vet for animals", "ani"] ] },
-  { for: "hlp", q: "In a hospital, you'd like to…", a: [
-    ["💉", "Take care of patients", "hlp"], ["🔬", "Test samples in the lab", "sci"],
-    ["🏋️", "Help people walk again after injuries", "spo"], ["🍎", "Plan healthy meals", "fod"] ] },
-  { for: "car", q: "How would you help your community?", a: [
-    ["👵", "Visit older people", "car"], ["🏫", "Tutor younger kids", "tea"],
-    ["🌳", "Clean up the park", "nat"], ["🥫", "Run a food drive", "biz"] ] },
-  { for: "car", q: "A new kid is alone at lunch. You…", a: [
-    ["👋", "Invite them to sit with you", "car"], ["🎲", "Start a game everyone can play", "spo"],
-    ["📣", "Ask the school to start a buddy club", "lea"], ["😄", "Make them laugh", "prf"] ] },
-  { for: "saf", q: "Which rescue job would you pick?", a: [
-    ["🚒", "Firefighter", "saf"], ["🏊", "Lifeguard", "spo"],
-    ["🚁", "Rescue helicopter pilot", "mec"], ["🏔️", "Mountain rescuer", "adv"] ] },
-  { for: "saf", q: "In an emergency, you'd be the one who…", a: [
-    ["🆘", "Stays calm and takes charge", "lea"], ["🩹", "Does first aid", "hlp"],
-    ["🫂", "Comforts people who are scared", "car"], ["🦺", "Gets everyone out safely", "saf"] ] },
-  { for: "lea", q: "If you ran your school, you'd…", a: [
-    ["📜", "Make fairer rules", "lea"], ["💰", "Plan how to spend the money", "biz"],
-    ["📣", "Give big speeches", "prf"], ["🤝", "Make sure everyone is heard", "car"] ] },
-  { for: "lea", q: "Which leader would you be?", a: [
-    ["⚖️", "A judge deciding what's fair", "lea"], ["🏢", "The boss of a big company", "biz"],
-    ["🌍", "An ambassador to other countries", "adv"], ["🧑‍✈️", "Captain of a sports team", "spo"] ] },
-  { for: "biz", q: "What business would you start?", a: [
-    ["🍋", "A snack stand", "fod"], ["🛍️", "A clothing shop", "art"],
-    ["📱", "An app company", "tec"], ["🐾", "A pet-sitting service", "ani"] ] },
-  { for: "biz", q: "With money, you'd most like to…", a: [
-    ["📈", "Invest it and watch it grow", "biz"], ["🔢", "Keep track of every cent", "sci"],
-    ["🤝", "Help families plan their money", "car"], ["🏪", "Sell things to customers", "biz"] ] },
-  { for: "nat", q: "Which nature job sounds best?", a: [
-    ["🌲", "Protecting a forest", "nat"], ["🐋", "Studying whales in the ocean", "ani"],
-    ["🌦️", "Predicting the weather", "sci"], ["☀️", "Building solar and wind power", "bld"] ] },
-  { for: "nat", q: "Outside, you'd rather…", a: [
-    ["🥕", "Grow plants and vegetables", "nat"], ["🥾", "Go on a long hike", "adv"],
-    ["🐞", "Look for bugs and animals", "ani"], ["🍓", "Pick fruit to cook with", "fod"] ] },
-  { for: "ani", q: "Which animal job would you pick?", a: [
-    ["🐕", "Vet for sick pets", "hlp"], ["🦁", "Zookeeper", "ani"],
-    ["🐎", "Horse trainer", "spo"], ["🐠", "Ocean animal scientist", "sci"] ] },
-  { for: "ani", q: "With animals, you'd most like to…", a: [
-    ["🥰", "Feed and care for them", "ani"], ["🦮", "Train them", "tea"],
-    ["📸", "Photograph them in the wild", "mda"], ["🏡", "Rescue them and find them homes", "car"] ] },
-  { for: "spo", q: "Which sports job would you pick?", a: [
-    ["🏆", "Pro athlete", "spo"], ["📋", "Coach", "tea"],
-    ["🎙️", "Sports commentator", "mda"], ["🏋️", "Fitness trainer", "hlp"] ] },
-  { for: "spo", q: "What do you like best about sports?", a: [
-    ["🥇", "Winning", "spo"], ["👥", "Being part of a team", "car"],
-    ["🏔️", "Going to wild places", "adv"], ["📊", "The stats and scores", "sci"] ] },
-  { for: "adv", q: "Pick your dream trip.", a: [
-    ["🗺️", "Visit 50 countries", "adv"], ["🤿", "Dive at a coral reef", "ani"],
-    ["🦖", "Dig for fossils in a desert", "sci"], ["🛳️", "Captain a ship", "mec"] ] },
-  { for: "adv", q: "On a trip, you would…", a: [
-    ["🧭", "Lead the group", "lea"], ["🍜", "Try every local food", "fod"],
-    ["🗣️", "Learn the language", "wrd"], ["📷", "Film everything", "mda"] ] },
-  { for: "fod", q: "In the kitchen, you'd…", a: [
-    ["🧁", "Bake cakes", "fod"], ["🍕", "Run the whole restaurant", "biz"],
-    ["🥗", "Make healthy meals", "hlp"], ["🧪", "Invent brand-new flavors", "sci"] ] },
-  { for: "fod", q: "Which food job would you pick?", a: [
-    ["👨‍🍳", "Chef", "fod"], ["🌾", "Farmer growing the food", "nat"],
-    ["📺", "Cooking show host", "prf"], ["🍫", "Making food look amazing", "art"] ] },
+// After the openers, each question puts your top 3 topics so far against one
+// "challenger" topic you haven't seen much. The answers come from this pool
+// (10 activities per topic), so every kid gets different questions.
+const ACTIVITIES = {
+  sci: [["🧪","Do experiments in a science lab"],["🔍","Find out why things happen"],["🧲","Play with magnets to see what sticks"],["🦠","Look at germs under a microscope"],["🌋","Make a model volcano erupt"],["🧊","Test what melts the fastest"],["💡","Discover something nobody knew before"],["🔬","Collect samples and study them"],["🧬","Learn how DNA works"],["⚗️","Mix liquids to see them change color"]],
+  tec: [["💻","Write code for a website"],["🎮","Program your own video game"],["🤖","Teach a robot new tricks"],["📱","Design a new app"],["🛡️","Stop hackers from breaking in"],["🧠","Build a smart AI helper"],["🖥️","Build your own computer"],["⌨️","Solve puzzles with code"],["🌐","Keep the internet running"],["🔌","Make gadgets talk to each other"]],
+  bld: [["🌉","Design a giant bridge"],["🏙️","Build a skyscraper"],["🪚","Build furniture from wood"],["🏰","Build a huge sandcastle"],["📐","Plan a new school building"],["🛠️","Invent a useful machine"],["⚡","Wire up the lights in a house"],["🏠","Build a tiny house"],["☀️","Build a solar power station"],["🎢","Design a roller coaster"]],
+  mec: [["🔧","Fix a broken car engine"],["🚂","Drive a train"],["🚜","Drive a giant tractor"],["🏍️","Build a motorbike"],["🚢","Steer a big ship"],["🚚","Drive a truck across the country"],["🛞","Change tires on a race car"],["🏗️","Operate a giant crane"],["⚙️","Take apart an engine to see how it works"],["🚲","Fix everyone's bikes"]],
+  spc: [["🚀","Launch a rocket"],["👩‍🚀","Walk on the moon"],["🛰️","Control a satellite"],["🪐","Study the rings of Saturn"],["✈️","Fly a jet plane"],["🌠","Track shooting stars"],["🛸","Look for life on other planets"],["🌌","Look at galaxies through a giant telescope"],["🌕","Build a base on the moon"],["🚁","Fly a helicopter"]],
+  art: [["🎨","Paint a huge wall mural"],["✏️","Draw your own comic characters"],["👗","Design a fashion collection"],["🏺","Make pottery"],["🔷","Design a cool logo"],["🖼️","Have your art hung in a museum"],["🧵","Sew your own clothes"],["🪅","Make decorations for a party"],["🎭","Make costumes for a play"],["💍","Design jewelry"]],
+  prf: [["🎤","Sing at a concert"],["🥁","Play drums in a band"],["💃","Dance on stage"],["🎹","Learn a new instrument"],["🎭","Act in a play"],["🎼","Write your own song"],["😂","Tell jokes on stage"],["🎺","Play in a marching band"],["🎪","Perform circus tricks"],["🎙️","Host a talent show"]],
+  mda: [["🎬","Make a movie"],["📹","Start your own video channel"],["🎞️","Make a cartoon"],["🕹️","Test new video games"],["📸","Take photos for a magazine"],["📺","Host a TV show"],["🎧","Make a podcast"],["✂️","Edit videos with cool effects"],["📰","Report the news on camera"],["🎥","Film a nature documentary"]],
+  wrd: [["📖","Write a book"],["📚","Read all day"],["📝","Write poems"],["✉️","Write letters to a pen pal"],["🗞️","Write for the school newspaper"],["🗣️","Learn a new language"],["📜","Write a movie script"],["🔤","Win a spelling contest"],["📓","Keep a journal"],["🐉","Make up fantasy stories"]],
+  tea: [["🧑‍🏫","Teach a class"],["👶","Read to little kids"],["✏️","Help a friend with homework"],["🧮","Explain math so it's easy"],["🏫","Run a school"],["📋","Plan fun lessons"],["🎓","Give a talk about something you love"],["🧩","Make learning games"],["🔠","Help someone learn to read"],["🗺️","Show visitors around a museum"]],
+  hlp: [["🩺","Be a doctor at a hospital"],["💉","Give someone a checkup"],["🦷","Fix people's teeth"],["🚑","Ride in an ambulance to help people"],["🩹","Do first aid"],["🧠","Learn how the brain works"],["💊","Make new medicines"],["🦴","Fix broken bones"],["👁️","Test people's eyes"],["🏥","Take care of patients"]],
+  car: [["🤗","Cheer up someone who's sad"],["👵","Help older people"],["🥫","Collect food for families"],["🫂","Listen to people's problems"],["🧸","Look after younger kids"],["🏘️","Make your town a better place"],["🎁","Collect gifts for kids in need"],["🤝","Help new kids make friends"],["♿","Help people with disabilities"],["🛏️","Volunteer at a shelter"]],
+  saf: [["🚒","Put out fires"],["🚓","Be a police officer"],["🛟","Be a lifeguard"],["🚁","Rescue people by helicopter"],["🦺","Keep a building site safe"],["🔍","Solve a mystery as a detective"],["🏔️","Rescue lost hikers"],["🆘","Answer emergency calls"],["🌪️","Help people after a storm"],["🛡️","Protect people from danger"]],
+  lea: [["👑","Be the leader of a team"],["⚖️","Be a judge in court"],["🏛️","Be the mayor of your town"],["📣","Give a big speech"],["🗳️","Run for class president"],["📜","Make fair rules"],["🕊️","Help two people stop fighting"],["🌍","Meet leaders from other countries"],["💼","Be the boss of a company"],["🧑‍⚖️","Argue a case as a lawyer"]],
+  biz: [["💰","Start your own business"],["🛒","Run a shop"],["📈","Invest money and watch it grow"],["🏷️","Sell things at a market"],["🏦","Work at a bank"],["🧾","Keep track of money"],["📊","Make a business plan"],["🤑","Save up for something big"],["📦","Ship products around the world"],["🍋","Run a lemonade stand"]],
+  nat: [["🌲","Protect a forest"],["🌻","Grow a big garden"],["♻️","Clean plastic out of the ocean"],["🌦️","Predict the weather"],["🍂","Collect leaves and rocks"],["⛰️","Explore a national park"],["🌱","Plant new trees"],["🐝","Help save the bees"],["🌊","Keep rivers clean"],["🍎","Grow fruit on a farm"]],
+  ani: [["🐶","Take care of dogs"],["🐱","Look after kittens"],["🦁","Work at a zoo"],["🐴","Ride and care for horses"],["🐬","Swim with dolphins"],["🐢","Save sea turtles"],["🦜","Teach a parrot to talk"],["🐾","Rescue lost pets"],["🐘","Protect elephants in the wild"],["🦎","Study snakes and lizards"]],
+  spo: [["⚽","Play in a soccer match"],["🏀","Play basketball"],["🏊","Swim in a race"],["🥋","Do karate"],["🏃","Win a running race"],["🎾","Play tennis"],["🤸","Do gymnastics"],["⛸️","Go ice skating"],["🏋️","Train to get super strong"],["🏆","Win a championship"]],
+  adv: [["🗺️","Explore a new country"],["🏕️","Go camping in the wild"],["🧗","Climb a mountain"],["🤿","Go scuba diving"],["🛶","Paddle down a river"],["🏜️","Cross a desert"],["🧭","Find your way with a map"],["🌏","Travel around the world"],["🌋","Visit a real volcano"],["🏝️","Explore a desert island"]],
+  fod: [["🍳","Cook dinner for your family"],["🧁","Bake cupcakes"],["🍕","Make pizza from scratch"],["🍦","Invent a new ice cream flavor"],["🥗","Make healthy snacks"],["👨‍🍳","Run a restaurant kitchen"],["🍪","Sell cookies you baked"],["🍜","Try food from other countries"],["🎂","Decorate a birthday cake"],["🥐","Work in a bakery"]],
+};
+
+const SHOWDOWN_PROMPTS = [
+  "Which one would you pick?",
+  "Which sounds the most fun?",
+  "If you could only do one, which would it be?",
+  "Which would you rather do?",
+  "Pick your favourite.",
 ];
 
 const TOTAL_QUESTIONS = 20;

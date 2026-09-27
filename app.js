@@ -78,18 +78,26 @@
   function ageBand(age) { return age <= 8 ? 0 : age <= 12 ? 1 : 2; }
 
   // ---------- Scoring ----------
-  function topicScores(upTo = state.answers.length) {
+  // Points per topic, plus when each topic last scored (used to break ties).
+  function tally(upTo = state.answers.length) {
     const s = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
+    const last = Object.fromEntries(TOPIC_KEYS.map(k => [k, -1]));
     for (let n = 0; n < upTo; n++) {
       const pick = state.answers[n];
-      if (pick != null) s[state.asked[n].a[pick][2]] += 1;
+      if (pick == null) continue;
+      const t = state.asked[n].a[pick][2];
+      s[t] += 1;
+      last[t] = n;
     }
-    return s;
+    return { s, last };
   }
+  const topicScores = upTo => tally(upTo).s;
 
-  // Rank topics (ties share a rank) and give each an importance level.
-  function rankTopics(scores) {
-    const list = TOPIC_KEYS.map(t => ({ t, s: scores[t] })).sort((a, b) => b.s - a.s);
+  // Rank topics and give each an importance level. Ties share a rank; the
+  // topic picked most recently is listed first so no topic wins ties by default.
+  function rankTopics(scores, last = tally().last) {
+    const list = TOPIC_KEYS.map(t => ({ t, s: scores[t] }))
+      .sort((a, b) => b.s - a.s || last[b.t] - last[a.t]);
     list.forEach((item, idx) => {
       item.rank = idx > 0 && item.s === list[idx - 1].s ? list[idx - 1].rank : idx + 1;
       item.level = item.s === 0 ? "low" : item.rank <= 3 ? "top" : item.rank <= 6 ? "high" : item.rank <= 12 ? "med" : "low";
@@ -98,23 +106,34 @@
   }
 
   // ---------- Adaptive question picking ----------
-  // The openers come first. After that, each question is a follow-up for the
-  // strongest topic that still has one left, so answers steer what comes next.
+  // The openers come first. After that, each question is a showdown between
+  // your top 3 topics so far and one challenger: the topic ranked 4th–10th
+  // that has been offered the fewest times. Your answers decide who is in the
+  // next showdown, so each kid gets different questions.
   function nextQuestion() {
     const n = state.asked.length;
     if (n < OPENERS.length) return OPENERS[n];
-    const used = new Set(state.asked);
-    const left = FOLLOWUPS.filter(f => !used.has(f));
-    const last = state.asked[n - 1].for;
-    const ranked = rankTopics(topicScores(n));
-    for (const pass of [true, false]) {
-      for (const r of ranked) {
-        if (pass && r.t === last) continue;  // avoid the same topic twice in a row
-        const f = left.find(x => x.for === r.t);
-        if (f) return f;
-      }
+
+    const { s, last } = tally(n);
+    const ranked = rankTopics(s, last).map(r => r.t);
+    const offered = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
+    const usedText = new Set();
+    state.asked.forEach(q => q.a.forEach(([, text, t]) => { offered[t] += 1; usedText.add(text); }));
+
+    const leaders = ranked.slice(0, 3);
+    const challenger = ranked.slice(3, 10).reduce((a, b) => (offered[b] < offered[a] ? b : a));
+    const answers = [...leaders, challenger].map(t => {
+      const fresh = ACTIVITIES[t].filter(([, text]) => !usedText.has(text));
+      const [emo, text] = fresh.length ? fresh[Math.floor(Math.random() * fresh.length)] : ACTIVITIES[t][0];
+      return [emo, text, t];
+    });
+    // Shuffle so the leading topic isn't always in the same spot.
+    for (let i = answers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [answers[i], answers[j]] = [answers[j], answers[i]];
     }
-    return left[0];
+    const prompt = SHOWDOWN_PROMPTS[(n - OPENERS.length) % SHOWDOWN_PROMPTS.length];
+    return { q: prompt, a: answers, leaders };
   }
 
   function startInfo(job, age) {
@@ -162,8 +181,10 @@
     $("qCount").textContent = `Question ${state.i + 1} of ${TOTAL_QUESTIONS}`;
     $("qFill").style.width = `${(state.i / TOTAL_QUESTIONS) * 100}%`;
     $("qText").textContent = q.q;
-    $("qBecause").hidden = !q.for;
-    if (q.for) $("qBecause").innerHTML = `Because you picked <strong>${TOPICS[q.for].icon} ${esc(TOPICS[q.for].name)}</strong>`;
+    $("qBecause").hidden = !q.leaders;
+    if (q.leaders) $("qBecause").innerHTML = "Your top topics so far: " +
+      q.leaders.map(t => `<strong>${TOPICS[t].icon} ${esc(TOPICS[t].name)}</strong>`).join(", ") +
+      ". One new challenger joins them.";
     $("youngTip").hidden = state.age > 8;
     $("backBtn").disabled = state.i === 0;
     $("answers").innerHTML = q.a.map(([emo, text], k) =>

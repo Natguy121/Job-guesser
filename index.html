@@ -20,7 +20,7 @@
   <section id="start" class="screen">
     <p class="eyebrow">A 20-question job guesser for ages 5 to 18</p>
     <h1>What could you be when you grow up?</h1>
-    <p class="lead">Pick one answer for each question. Every answer gives a point to one of 10 topics. Your strongest topics come first, and they point to the jobs that could fit you.</p>
+    <p class="lead">Pick one answer for each question. Every answer gives a point to one of 20 topics. The first 5 questions are the same for everyone. After that, the questions change based on what you pick, so no two kids get the same survey.</p>
 
     <div class="age-card">
       <label for="age" class="age-label">How old are you?</label>
@@ -33,7 +33,7 @@
       <p class="age-note" id="ageNote"></p>
     </div>
 
-    <h2 class="h-small">The 10 topics</h2>
+    <h2 class="h-small">The 20 topics</h2>
     <ul class="topic-chips" id="topicChips"></ul>
 
     <button class="btn btn-go" id="startBtn" type="button">Start the survey</button>
@@ -46,6 +46,7 @@
       <div class="progress-track"><div class="progress-fill" id="qFill"></div></div>
     </div>
     <p class="young-tip" id="youngTip" hidden>Tip: ask a grown-up to read the questions with you.</p>
+    <p class="because" id="qBecause" hidden></p>
     <h2 id="qText" class="q-text"></h2>
     <div class="answers" id="answers"></div>
     <div class="quiz-nav">
@@ -75,7 +76,7 @@
     </div>
 
     <h2>Your topics, most important first</h2>
-    <p class="muted">Points come from your 20 answers. Each topic can score up to 8.</p>
+    <p class="muted">Points come from your 20 answers. The questions followed your strongest topics, so the top ones got the most chances to score.</p>
     <ol class="topic-rank" id="topicRank"></ol>
 
     <h2>Jobs that match you best</h2>

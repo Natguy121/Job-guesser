@@ -10,8 +10,11 @@ A 20-question job guesser for kids aged 5 to 18. Open `index.html` in any browse
    - Future jobs rank a little higher the further away work is. Jobs that robots and AI are changing rank a little lower.
    - "Things to try now" tips for ages 5–8, 9–12 and 13–18.
    - On the results page, an age slider shows what shifts at other ages.
-2. **20 questions.** Each answer adds 1 point to one of 10 topics. Each topic appears 8 times, so every topic can score 0–8.
-3. **10 topics:** Science & Discovery, Technology & Computers, Building & Fixing, Art & Design, Performing & Media, Helping & Health, Nature & Animals, Sports & Action, Business & Money, Words & Teaching.
+2. **20 adaptive questions.** Each answer adds 1 point to one topic.
+   - Everyone gets the same 5 openers, which cover all 20 topics once.
+   - The other 15 are follow-ups ("Because you picked Animals…") for the kid's strongest topic so far. Follow-up answers can point to nearby topics, so the path keeps changing.
+   - Going back and changing an answer rebuilds the questions after it.
+3. **20 topics:** Science & Experiments, Technology & Coding, Building & Engineering, Machines & Vehicles, Space & Flight, Art & Design, Music & Performing, Movies, Media & Games, Reading & Writing, Teaching & Explaining, Health & Medicine, Caring & Community, Safety & Rescue, Leading & Law, Business & Money, Nature & Environment, Animals, Sports & Fitness, Adventure & Travel, Food & Cooking.
 4. **Levels of importance.**
    - Your topics are ranked and labelled *Top priority*, *High*, *Medium* or *Low*.
    - Every job lists its topics in order: *Comes first* (3), *Important* (2), *Helps too* (1).

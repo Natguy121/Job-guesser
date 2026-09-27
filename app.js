@@ -1,8 +1,12 @@
 // Future Map — survey logic
 (function () {
   const THIS_YEAR = new Date().getFullYear();
-  const MAX_PER_TOPIC = 8;
   const TOPIC_KEYS = Object.keys(TOPICS);
+  const PAGE = 20;
+
+  // Spread topic colors around the color wheel; lightness comes from the theme.
+  TOPIC_KEYS.forEach((t, i) => { TOPICS[t].hue = Math.round(i * (360 / TOPIC_KEYS.length)); });
+  const tc = t => `--tc: hsl(${TOPICS[t].hue} 62% var(--tl))`;
 
   const IMPORTANCE = { 3: "Comes first", 2: "Important", 1: "Helps too" };
   const LEVELS = {
@@ -41,12 +45,12 @@
   const state = {
     age: clampAge(store.get("futureMap.age", 10)),
     viewAge: 10,
-    answers: new Array(QUESTIONS.length).fill(null),
+    asked: [],    // questions shown so far, in order
+    answers: [],  // answer index picked for each asked question
     i: 0,
     locked: false,
-    listLimit: 20,
+    listLimit: PAGE,
   };
-  const PAGE = 20;
 
   function clampAge(a) { a = Number(a); return Number.isFinite(a) ? Math.min(18, Math.max(5, Math.round(a))) : 10; }
 
@@ -74,9 +78,12 @@
   function ageBand(age) { return age <= 8 ? 0 : age <= 12 ? 1 : 2; }
 
   // ---------- Scoring ----------
-  function topicScores() {
+  function topicScores(upTo = state.answers.length) {
     const s = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
-    state.answers.forEach((pick, qi) => { if (pick != null) s[QUESTIONS[qi].a[pick][2]] += 1; });
+    for (let n = 0; n < upTo; n++) {
+      const pick = state.answers[n];
+      if (pick != null) s[state.asked[n].a[pick][2]] += 1;
+    }
     return s;
   }
 
@@ -85,9 +92,29 @@
     const list = TOPIC_KEYS.map(t => ({ t, s: scores[t] })).sort((a, b) => b.s - a.s);
     list.forEach((item, idx) => {
       item.rank = idx > 0 && item.s === list[idx - 1].s ? list[idx - 1].rank : idx + 1;
-      item.level = item.s === 0 ? "low" : item.rank <= 2 ? "top" : item.rank <= 4 ? "high" : item.rank <= 7 ? "med" : "low";
+      item.level = item.s === 0 ? "low" : item.rank <= 3 ? "top" : item.rank <= 6 ? "high" : item.rank <= 12 ? "med" : "low";
     });
     return list;
+  }
+
+  // ---------- Adaptive question picking ----------
+  // The openers come first. After that, each question is a follow-up for the
+  // strongest topic that still has one left, so answers steer what comes next.
+  function nextQuestion() {
+    const n = state.asked.length;
+    if (n < OPENERS.length) return OPENERS[n];
+    const used = new Set(state.asked);
+    const left = FOLLOWUPS.filter(f => !used.has(f));
+    const last = state.asked[n - 1].for;
+    const ranked = rankTopics(topicScores(n));
+    for (const pass of [true, false]) {
+      for (const r of ranked) {
+        if (pass && r.t === last) continue;  // avoid the same topic twice in a row
+        const f = left.find(x => x.for === r.t);
+        if (f) return f;
+      }
+    }
+    return left[0];
   }
 
   function startInfo(job, age) {
@@ -121,7 +148,7 @@
 
   function renderTopicChips() {
     $("topicChips").innerHTML = TOPIC_KEYS.map(t =>
-      `<li class="chip" style="--tc: var(--t-${t})">${TOPICS[t].icon} ${esc(TOPICS[t].name)}</li>`).join("");
+      `<li class="chip" style="${tc(t)}">${TOPICS[t].icon} ${esc(TOPICS[t].name)}</li>`).join("");
   }
 
   // ---------- Quiz ----------
@@ -131,11 +158,12 @@
   }
 
   function renderQuestion() {
-    const q = QUESTIONS[state.i];
-    const n = QUESTIONS.length;
-    $("qCount").textContent = `Question ${state.i + 1} of ${n}`;
-    $("qFill").style.width = `${(state.i / n) * 100}%`;
+    const q = state.asked[state.i];
+    $("qCount").textContent = `Question ${state.i + 1} of ${TOTAL_QUESTIONS}`;
+    $("qFill").style.width = `${(state.i / TOTAL_QUESTIONS) * 100}%`;
     $("qText").textContent = q.q;
+    $("qBecause").hidden = !q.for;
+    if (q.for) $("qBecause").innerHTML = `Because you picked <strong>${TOPICS[q.for].icon} ${esc(TOPICS[q.for].name)}</strong>`;
     $("youngTip").hidden = state.age > 8;
     $("backBtn").disabled = state.i === 0;
     $("answers").innerHTML = q.a.map(([emo, text], k) =>
@@ -148,11 +176,17 @@
   function pick(k) {
     if (state.locked) return;
     state.locked = true;
+    // Changing an earlier answer throws away the questions after it, since they may be different now.
+    state.asked.length = state.i + 1;
+    state.answers.length = state.i + 1;
     state.answers[state.i] = k;
     document.querySelectorAll(".answer").forEach(b => b.classList.toggle("picked", Number(b.dataset.k) === k));
     setTimeout(() => {
-      if (state.i < QUESTIONS.length - 1) { state.i += 1; renderQuestion(); }
-      else finish();
+      if (state.i < TOTAL_QUESTIONS - 1) {
+        state.asked.push(nextQuestion());
+        state.i += 1;
+        renderQuestion();
+      } else finish();
     }, 260);
   }
 
@@ -160,8 +194,7 @@
     state.viewAge = state.age;
     state.listLimit = PAGE;
     const scores = topicScores();
-    const ranked = rankTopics(scores);
-    const top = ranked.slice(0, 3).map(r => r.t);
+    const top = rankTopics(scores).slice(0, 3).map(r => r.t);
     const best = rankedJobs(scores, state.age).slice(0, 3).map(j => j.name);
     const history = store.get("futureMap.history", []);
     history.push({ date: new Date().toISOString().slice(0, 10), age: state.age, top, jobs: best });
@@ -198,6 +231,7 @@
     const scores = topicScores();
     const ranked = rankTopics(scores);
     const levelOf = Object.fromEntries(ranked.map(r => [r.t, r.level]));
+    const topScore = Math.max(1, ranked[0].s);
 
     $("resAge").value = age;
     $("resAgeOut").textContent = age;
@@ -210,11 +244,11 @@
 
     // Topics with importance levels
     $("topicRank").innerHTML = ranked.map(r => `
-      <li class="topic-row${r.level === "top" ? " top" : ""}" style="--tc: var(--t-${r.t})">
+      <li class="topic-row${r.level === "top" ? " top" : ""}" style="${tc(r.t)}">
         <span class="rank">${r.rank}</span>
-        <span class="name">${TOPICS[r.t].icon} ${esc(TOPICS[r.t].name)} <span class="pts">${r.s} / ${MAX_PER_TOPIC} points</span></span>
+        <span class="name">${TOPICS[r.t].icon} ${esc(TOPICS[r.t].name)} <span class="pts">${r.s} point${r.s === 1 ? "" : "s"}</span></span>
         <span class="lvl ${LEVELS[r.level].cls}">${LEVELS[r.level].label}</span>
-        <div class="bar-track"><div class="bar-fill" style="width:${(r.s / MAX_PER_TOPIC) * 100}%"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(r.s / topScore) * 100}%"></div></div>
       </li>`).join("");
 
     // Top jobs. Younger kids see a couple more ideas since things will change.
@@ -226,7 +260,7 @@
     const band = ageBand(age);
     const bandName = ["ages 5–8", "ages 9–12", "ages 13–18"][band];
     $("tips").innerHTML = ranked.slice(0, 3).map(r => `
-      <div class="tip" style="--tc: var(--t-${r.t})">
+      <div class="tip" style="${tc(r.t)}">
         <strong>${TOPICS[r.t].icon} ${esc(TOPICS[r.t].name)}</strong>
         <span>${esc(TIPS[r.t][band])}</span>
         <span class="muted small">Idea for ${bandName}</span>
@@ -321,7 +355,8 @@
     renderAge();
   });
   $("startBtn").addEventListener("click", () => {
-    state.answers.fill(null);
+    state.asked = [OPENERS[0]];
+    state.answers = [];
     state.i = 0;
     renderQuestion();
     show("quiz");

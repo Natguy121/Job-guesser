@@ -17,8 +17,7 @@
   --c-bg: #FCEBC4; --c-fg: #7A4E00;
   --f-bg: #E6DEFB; --f-fg: #4B2BA8;
 
-  --t-sci: #2F6FDE; --t-tec: #6D4AD8; --t-bld: #D29B00; --t-art: #D9407A; --t-prf: #D23C3C;
-  --t-hlp: #0E9A8B; --t-nat: #3E9338; --t-spo: #E37B10; --t-biz: #8C6A3A; --t-wrd: #54658C;
+  --tl: 44%;
 
   --display: "Baloo 2", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
   --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -31,8 +30,7 @@
     --accent: #FF9152; --accent-ink: #0F1627; --accent-soft: #4A2A18;
     --g-bg: #143A2A; --g-fg: #8BE0B4; --s-bg: #212D48; --s-fg: #C3CDE6;
     --c-bg: #3D2E0C; --c-fg: #F4C868; --f-bg: #2B2150; --f-fg: #C7B6FF;
-    --t-sci: #5B90F0; --t-tec: #9A7CF0; --t-bld: #E8B92E; --t-art: #EE6F9C; --t-prf: #EE6A6A;
-    --t-hlp: #2CC2B0; --t-nat: #6CC062; --t-spo: #F59A3E; --t-biz: #C09A63; --t-wrd: #8C9CC2;
+    --tl: 66%;
   }
 }
 :root[data-theme="dark"] {
@@ -42,8 +40,7 @@
   --accent: #FF9152; --accent-ink: #0F1627; --accent-soft: #4A2A18;
   --g-bg: #143A2A; --g-fg: #8BE0B4; --s-bg: #212D48; --s-fg: #C3CDE6;
   --c-bg: #3D2E0C; --c-fg: #F4C868; --f-bg: #2B2150; --f-fg: #C7B6FF;
-  --t-sci: #5B90F0; --t-tec: #9A7CF0; --t-bld: #E8B92E; --t-art: #EE6F9C; --t-prf: #EE6A6A;
-  --t-hlp: #2CC2B0; --t-nat: #6CC062; --t-spo: #F59A3E; --t-biz: #C09A63; --t-wrd: #8C9CC2;
+  --tl: 66%;
 }
 
 * { box-sizing: border-box; }
@@ -134,6 +131,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 32px; cu
 .progress-track { height: 12px; background: var(--card); border: 2px solid var(--edge); border-radius: 99px; overflow: hidden; }
 .progress-fill { height: 100%; width: 0; background: var(--accent); transition: width .25s; }
 .young-tip { background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; font-weight: 700; align-self: flex-start; }
+.because { font-weight: 700; color: var(--muted); margin-bottom: -10px; }
+.because strong { color: var(--ink); }
 .q-text { font-size: clamp(1.7rem, 5vw, 2.4rem); margin-top: 6px; }
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .answer {

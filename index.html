@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Future Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Baloo+2:wght@600;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="bar">
+  <span class="logo">Future<span>Map</span></span>
+  <span class="bar-age" id="barAge"></span>
+</header>
+
+<main class="wrap">
+  <!-- START -->
+  <section id="start" class="screen">
+    <p class="eyebrow">A 20-question job guesser for ages 5 to 18</p>
+    <h1>What could you be when you grow up?</h1>
+    <p class="lead">Pick one answer for each question. Every answer gives a point to one of 10 topics. Your strongest topics come first, and they point to the jobs that could fit you.</p>
+
+    <div class="age-card">
+      <label for="age" class="age-label">How old are you?</label>
+      <div class="age-row">
+        <output id="ageOut" for="age" class="age-num">10</output>
+        <span class="age-unit">years old</span>
+      </div>
+      <input type="range" id="age" min="5" max="18" step="1" value="10">
+      <div class="age-scale" aria-hidden="true"><span>5</span><span>8</span><span>11</span><span>14</span><span>18</span></div>
+      <p class="age-note" id="ageNote"></p>
+    </div>
+
+    <h2 class="h-small">The 10 topics</h2>
+    <ul class="topic-chips" id="topicChips"></ul>
+
+    <button class="btn btn-go" id="startBtn" type="button">Start the survey</button>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="screen" hidden>
+    <div class="progress">
+      <span id="qCount" class="q-count">Question 1 of 20</span>
+      <div class="progress-track"><div class="progress-fill" id="qFill"></div></div>
+    </div>
+    <p class="young-tip" id="youngTip" hidden>Tip: ask a grown-up to read the questions with you.</p>
+    <h2 id="qText" class="q-text"></h2>
+    <div class="answers" id="answers"></div>
+    <div class="quiz-nav">
+      <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
+      <span class="key-hint">Press 1–4 to answer</span>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results" class="screen" hidden>
+    <p class="eyebrow">Your results</p>
+    <h1 id="resTitle">Your Future Map</h1>
+
+    <div class="what-if">
+      <div class="what-if-top">
+        <label for="resAge" class="h-small">Age: <strong id="resAgeOut">10</strong></label>
+        <span class="muted small">Slide to see what changes at other ages</span>
+      </div>
+      <input type="range" id="resAge" min="5" max="18" step="1" value="10">
+      <div class="meter-row">
+        <span class="small">How much could this change?</span>
+        <strong id="changeLabel"></strong>
+      </div>
+      <div class="meter"><div class="meter-fill" id="changeFill"></div></div>
+      <p id="changeText"></p>
+      <p id="futureText" class="muted"></p>
+    </div>
+
+    <h2>Your topics, most important first</h2>
+    <p class="muted">Points come from your 20 answers. Each topic can score up to 8.</p>
+    <ol class="topic-rank" id="topicRank"></ol>
+
+    <h2>Jobs that match you best</h2>
+    <p class="muted">Each job lists its topics in order of importance. A ✓ means that topic is one of your strong ones.</p>
+    <div class="job-grid" id="topJobs"></div>
+
+    <h2>Things to try now</h2>
+    <div class="tips" id="tips"></div>
+
+    <div id="historyBox" hidden>
+      <h2>How your results changed</h2>
+      <div class="table-scroll">
+        <table class="history">
+          <thead><tr><th>Date</th><th>Age</th><th>Top topics</th><th>Top jobs</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-quiet small" id="clearHistory" type="button">Clear saved results</button>
+    </div>
+
+    <h2>Browse every job</h2>
+    <div class="filters">
+      <input type="search" id="jobSearch" placeholder="Search jobs, like 'animals' or 'pilot'">
+      <select id="jobTopic" aria-label="Filter by topic"></select>
+    </div>
+    <p class="muted small" id="jobCount"></p>
+    <ul class="job-list" id="allJobs"></ul>
+    <button class="btn btn-quiet" id="moreJobs" type="button" hidden>Show more jobs</button>
+
+    <div class="res-actions">
+      <button class="btn btn-go" id="retakeBtn" type="button">Take it again</button>
+    </div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

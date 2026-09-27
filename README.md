@@ -11,7 +11,7 @@ A 20-question job guesser for kids aged 5 to 18. Open `index.html` in any browse
    - "Things to try now" tips for ages 5–8, 9–12 and 13–18.
    - On the results page, an age slider shows what shifts at other ages.
 2. **20 adaptive questions.** Each answer adds 1 point to one topic.
-   - Everyone gets the same 10 openers. They cover all 20 topics twice, each time against different rivals.
+   - The first 10 come from a bank of 210 questions (`questions.js`), stored in 42 sets of 5. Each set covers all 20 topics once. Every run picks 2 random sets, so the start is different almost every time while each topic still gets offered exactly twice.
    - The other 10 are showdowns: the kid's top 3 topics so far against one challenger (the topic ranked 4th–10th that has been offered least). The answers come from a pool of 10 activities per topic, so every kid gets different questions.
    - Ties are broken by the most recent pick, not by the order of topics.
    - Going back and changing an answer rebuilds the questions after it.
@@ -27,9 +27,9 @@ Past results are saved in the browser, so kids can retake the survey each year a
 
 ## Editing
 
-All questions, topics, tips and jobs are in `data.js`. A job looks like this:
+Topics, tips, showdown activities and jobs are in `data.js`. The 200-question bank is in `questions.js`. Each set there must cover all 20 topics exactly once. A job looks like this:
 
 ```js
-["Veterinarian", "Takes care of sick and hurt animals", "nat3 hlp2 sci2", 8, "g"]
+["Veterinarian", "Takes care of sick and hurt animals", "ani3 hlp3 sci1", 8, "g"]
 //  name          description                           topics+importance  years of training  outlook (g/s/c/f)
 ```

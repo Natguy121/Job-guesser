@@ -45,6 +45,7 @@
   const state = {
     age: clampAge(store.get("futureMap.age", 10)),
     viewAge: 10,
+    openers: OPENERS, // the 10 opening questions for this run
     asked: [],    // questions shown so far, in order
     answers: [],  // answer index picked for each asked question
     i: 0,
@@ -112,7 +113,7 @@
   // next showdown, so each kid gets different questions.
   function nextQuestion() {
     const n = state.asked.length;
-    if (n < OPENERS.length) return OPENERS[n];
+    if (n < state.openers.length) return state.openers[n];
 
     const { s, last } = tally(n);
     const ranked = rankTopics(s, last).map(r => r.t);
@@ -127,13 +128,26 @@
       const [emo, text] = fresh.length ? fresh[Math.floor(Math.random() * fresh.length)] : ACTIVITIES[t][0];
       return [emo, text, t];
     });
-    // Shuffle so the leading topic isn't always in the same spot.
-    for (let i = answers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [answers[i], answers[j]] = [answers[j], answers[i]];
-    }
-    const prompt = SHOWDOWN_PROMPTS[(n - OPENERS.length) % SHOWDOWN_PROMPTS.length];
+    shuffle(answers); // so the leading topic isn't always in the same spot
+    const prompt = SHOWDOWN_PROMPTS[(n - state.openers.length) % SHOWDOWN_PROMPTS.length];
     return { q: prompt, a: answers, leaders };
+  }
+
+  // Pick 2 random sets of 5 (each set covers all 20 topics once) and mix them.
+  const ALL_SETS = [OPENERS.slice(0, 5), OPENERS.slice(5, 10), ...QUESTION_SETS];
+  function pickOpeners() {
+    const i = Math.floor(Math.random() * ALL_SETS.length);
+    let j = Math.floor(Math.random() * (ALL_SETS.length - 1));
+    if (j >= i) j += 1;
+    return shuffle([...ALL_SETS[i], ...ALL_SETS[j]]);
+  }
+
+  function shuffle(list) {
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
   }
 
   function startInfo(job, age) {
@@ -376,7 +390,8 @@
     renderAge();
   });
   $("startBtn").addEventListener("click", () => {
-    state.asked = [OPENERS[0]];
+    state.openers = pickOpeners();
+    state.asked = [state.openers[0]];
     state.answers = [];
     state.i = 0;
     renderQuestion();

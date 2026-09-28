@@ -1,6 +1,6 @@
 # Future Map
 
-A 20-question job guesser for kids aged 5 to 18. Open `index.html` in any browser. It needs no install or build step.
+A job guessing game for kids aged 5 to 18. Open `index.html` in any browser. It needs no install or build step.
 
 ## How it works
 
@@ -10,24 +10,26 @@ A 20-question job guesser for kids aged 5 to 18. Open `index.html` in any browse
    - Future jobs rank a little higher the further away work is. Jobs that robots and AI are changing rank a little lower.
    - "Things to try now" tips for ages 5–8, 9–12 and 13–18.
    - On the results page, an age slider shows what shifts at other ages.
-2. **20 adaptive questions.** Each answer adds 1 point to one topic.
-   - The first 10 come from a bank of 210 questions (`questions.js`), stored in 42 sets of 5. Each set covers all 20 topics once. Every run picks 2 random sets, so the start is different almost every time while each topic still gets offered exactly twice.
-   - The other 10 are showdowns: the kid's top 3 topics so far against one challenger (the topic ranked 4th–10th that has been offered least). The answers come from a pool of 10 activities per topic, so every kid gets different questions.
-   - Ties are broken by the most recent pick, not by the order of topics.
-   - Going back and changing an answer rebuilds the questions after it.
-   - In a simulation of 1,500 kids with known favourites, the survey put the true favourite first 76% of the time and in the top 3 89% of the time.
-3. **20 topics:** Science & Experiments, Technology & Coding, Building & Engineering, Machines & Vehicles, Space & Flight, Art & Design, Music & Performing, Movies, Media & Games, Reading & Writing, Teaching & Explaining, Health & Medicine, Caring & Community, Safety & Rescue, Leading & Law, Business & Money, Nature & Environment, Animals, Sports & Fitness, Adventure & Travel, Food & Cooking.
-4. **Levels of importance.**
-   - Your topics are ranked and labelled *Top priority*, *High*, *Medium* or *Low*.
+2. **25 questions, answered in the kid's own words.**
+   - The first 15 are the same for everyone ("What do you love doing most in your free time?").
+   - The last 10 are follow-ups about the kid's top 4 topics so far ("Because you wrote about Animals…"), so they change with what the kid writes.
+   - After each answer the game shows the clues it found, like "🐾 Animals: dog, puppy".
+3. **Reading the answers** (`engine.js`, no internet or AI needed):
+   - `words.js` lists clue words for each of the 20 topics. Each clue word in an answer gives its topic a point (at most 2 per answer).
+   - "Not", "don't", "hate" and similar words flip the next few words, so "I don't like sports" counts against sports.
+   - Words that just repeat the question count half.
+   - Naming a job ("I want to be a vet") counts strongly on "What do you want to be?" and weakly elsewhere, so "my mom is a nurse" doesn't make the guess Nurse.
+4. **The guess.** Every job gets a score from how well the kid's topics fit the job's topics, plus words that match the job's own description, plus a bonus if the kid named it. The top job is the big guess, with the clue words that led to it.
+5. **Levels of importance.**
+   - The kid's topics are ranked and labelled *Top priority*, *High*, *Medium* or *Low*.
    - Every job lists its topics in order: *Comes first* (3), *Important* (2), *Helps too* (1).
-   - A job's match adds up your topic points weighted by that importance.
-5. **200+ jobs.** They include future jobs such as AI Trainer and Space Farmer. You can search and filter all of them.
+6. **629 jobs** (`jobs.js`), including future jobs such as AI Trainer and Space Farmer. You can search and filter all of them.
 
-Past results are saved in the browser, so kids can retake the survey each year and see how their results changed.
+Past results are saved in the browser, so kids can play again each year and see how their results changed.
 
 ## Editing
 
-Topics, tips, showdown activities and jobs are in `data.js`. The 200-question bank is in `questions.js`. Each set there must cover all 20 topics exactly once. A job looks like this:
+Topics, tips and questions are in `data.js`, jobs are in `jobs.js`, and clue words and job nicknames (like "vet" for Veterinarian) are in `words.js`. A job looks like this:
 
 ```js
 ["Veterinarian", "Takes care of sick and hurt animals", "ani3 hlp3 sci1", 8, "g"]

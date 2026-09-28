@@ -1,12 +1,14 @@
-// Future Map — survey logic
+// Future Map — page logic for the job guessing game
 (function () {
   const THIS_YEAR = new Date().getFullYear();
-  const TOPIC_KEYS = Object.keys(TOPICS);
+  const TOPIC_KEYS = Engine.TOPIC_KEYS;
   const PAGE = 20;
+  const prepared = Engine.prepareJobs(JOBS);
 
   // Spread topic colors around the color wheel; lightness comes from the theme.
   TOPIC_KEYS.forEach((t, i) => { TOPICS[t].hue = Math.round(i * (360 / TOPIC_KEYS.length)); });
   const tc = t => `--tc: hsl(${TOPICS[t].hue} 62% var(--tl))`;
+  const topicLabel = t => `${TOPICS[t].icon} ${esc(TOPICS[t].name)}`;
 
   const IMPORTANCE = { 3: "Comes first", 2: "Important", 1: "Helps too" };
   const LEVELS = {
@@ -21,13 +23,6 @@
     c: { label: "Changing",   cls: "pill-c" },
     f: { label: "Future job", cls: "pill-f" },
   };
-
-  // Turn "sci3 nat2 wrd1" into [{t:"sci", w:3}, ...], most important first.
-  const jobs = JOBS.map(([name, desc, tags, train, outlook]) => ({
-    name, desc, train, outlook,
-    topics: tags.split(" ").map(s => ({ t: s.slice(0, 3), w: Number(s.slice(3)) }))
-                .sort((a, b) => b.w - a.w),
-  }));
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -45,11 +40,10 @@
   const state = {
     age: clampAge(store.get("futureMap.age", 10)),
     viewAge: 10,
-    openers: OPENERS, // the 10 opening questions for this run
-    asked: [],    // questions shown so far, in order
-    answers: [],  // answer index picked for each asked question
+    asked: [],     // questions shown so far, in order
+    texts: [],     // what the kid typed for each
+    readings: [],  // Engine.readAnswer result for each
     i: 0,
-    locked: false,
     listLimit: PAGE,
   };
 
@@ -58,7 +52,7 @@
   // ---------- Age ----------
   function ageStage(age) {
     if (age <= 7)  return { pct: 90, label: "Very likely to change",
-      text: `At ${age}, your favourite things can change lots of times, and that's great. Try many different activities and take this survey again next year.` };
+      text: `At ${age}, your favourite things can change lots of times, and that's great. Try many different activities and play again next year.` };
     if (age <= 10) return { pct: 75, label: "Likely to change",
       text: `At ${age}, your interests are starting to show, but they will keep growing. Notice which topics you keep coming back to.` };
     if (age <= 13) return { pct: 55, label: "Could change",
@@ -78,27 +72,9 @@
 
   function ageBand(age) { return age <= 8 ? 0 : age <= 12 ? 1 : 2; }
 
-  // ---------- Scoring ----------
-  // Points per topic, plus when each topic last scored (used to break ties).
-  function tally(upTo = state.answers.length) {
-    const s = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
-    const last = Object.fromEntries(TOPIC_KEYS.map(k => [k, -1]));
-    for (let n = 0; n < upTo; n++) {
-      const pick = state.answers[n];
-      if (pick == null) continue;
-      const t = state.asked[n].a[pick][2];
-      s[t] += 1;
-      last[t] = n;
-    }
-    return { s, last };
-  }
-  const topicScores = upTo => tally(upTo).s;
-
-  // Rank topics and give each an importance level. Ties share a rank; the
-  // topic picked most recently is listed first so no topic wins ties by default.
-  function rankTopics(scores, last = tally().last) {
-    const list = TOPIC_KEYS.map(t => ({ t, s: scores[t] }))
-      .sort((a, b) => b.s - a.s || last[b.t] - last[a.t]);
+  // Rank topics and give each an importance level. Ties go to the topic mentioned most recently.
+  function rankTopics(scores, last) {
+    const list = TOPIC_KEYS.map(t => ({ t, s: scores[t] })).sort((a, b) => b.s - a.s || last[b.t] - last[a.t]);
     list.forEach((item, idx) => {
       item.rank = idx > 0 && item.s === list[idx - 1].s ? list[idx - 1].rank : idx + 1;
       item.level = item.s === 0 ? "low" : item.rank <= 3 ? "top" : item.rank <= 6 ? "high" : item.rank <= 12 ? "med" : "low";
@@ -106,67 +82,26 @@
     return list;
   }
 
-  // ---------- Adaptive question picking ----------
-  // The openers come first. After that, each question is a showdown between
-  // your top 3 topics so far and one challenger: the topic ranked 4th–10th
-  // that has been offered the fewest times. Your answers decide who is in the
-  // next showdown, so each kid gets different questions.
+  // ---------- Picking questions ----------
+  // The first 15 are the same for everyone. After that, each question is a
+  // follow-up about one of the top 4 topics found so far, spreading the
+  // follow-ups between them so no single early answer takes over.
   function nextQuestion() {
     const n = state.asked.length;
-    if (n < state.openers.length) return state.openers[n];
-
-    const { s, last } = tally(n);
-    const ranked = rankTopics(s, last).map(r => r.t);
-    const offered = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
-    const usedText = new Set();
-    state.asked.forEach(q => q.a.forEach(([, text, t]) => { offered[t] += 1; usedText.add(text); }));
-
-    const leaders = ranked.slice(0, 3);
-    const challenger = ranked.slice(3, 10).reduce((a, b) => (offered[b] < offered[a] ? b : a));
-    const answers = [...leaders, challenger].map(t => {
-      const fresh = ACTIVITIES[t].filter(([, text]) => !usedText.has(text));
-      const [emo, text] = fresh.length ? fresh[Math.floor(Math.random() * fresh.length)] : ACTIVITIES[t][0];
-      return [emo, text, t];
-    });
-    shuffle(answers); // so the leading topic isn't always in the same spot
-    const prompt = SHOWDOWN_PROMPTS[(n - state.openers.length) % SHOWDOWN_PROMPTS.length];
-    return { q: prompt, a: answers, leaders };
-  }
-
-  // Pick 2 random sets of 5 (each set covers all 20 topics once) and mix them.
-  const ALL_SETS = [OPENERS.slice(0, 5), OPENERS.slice(5, 10), ...QUESTION_SETS];
-  function pickOpeners() {
-    const i = Math.floor(Math.random() * ALL_SETS.length);
-    let j = Math.floor(Math.random() * (ALL_SETS.length - 1));
-    if (j >= i) j += 1;
-    return shuffle([...ALL_SETS[i], ...ALL_SETS[j]]);
-  }
-
-  function shuffle(list) {
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [list[i], list[j]] = [list[j], list[i]];
+    if (n < QUESTIONS.length) return QUESTIONS[n];
+    const used = new Set(state.asked);
+    const left = FOLLOWUPS.filter(f => !used.has(f));
+    const { s, last } = Engine.tally(state.readings.slice(0, n));
+    const lastFor = state.asked[n - 1].for;
+    const asked = t => state.asked.filter(q => q.for === t).length;
+    const top = rankTopics(s, last).filter(r => r.s > 0).slice(0, 4).map(r => r.t);
+    const options = top.filter(t => t !== lastFor && left.some(f => f.for === t));
+    const pool = options.length ? options : top.filter(t => left.some(f => f.for === t));
+    if (pool.length) {
+      const t = pool.reduce((a, b) => (asked(b) < asked(a) ? b : a));
+      return left.find(f => f.for === t);
     }
-    return list;
-  }
-
-  function startInfo(job, age) {
-    const startAge = 18 + job.train;
-    const yearsAway = Math.max(0, startAge - age);
-    return { startAge: Math.max(startAge, age), yearsAway, year: THIS_YEAR + yearsAway };
-  }
-
-  // Match = how well your topic points line up with what the job needs,
-  // adjusted by how far away the job is (future jobs rise, changing jobs dip for young kids).
-  // 100% means every topic the job needs is as high as your best topic.
-  function matchJob(job, scores, age) {
-    const best = Math.max(1, ...Object.values(scores));
-    let got = 0, max = 0;
-    job.topics.forEach(({ t, w }) => { got += w * scores[t]; max += w * best; });
-    const base = max ? got / max : 0;
-    const yrs = Math.min(15, startInfo(job, age).yearsAway);
-    const mod = { f: 1 + 0.012 * yrs, g: 1 + 0.004 * yrs, s: 1, c: 1 - 0.008 * yrs }[job.outlook];
-    return Math.min(100, Math.round(base * mod * 100));
+    return left[Math.floor(Math.random() * left.length)];
   }
 
   // ---------- Start screen ----------
@@ -176,12 +111,11 @@
     $("barAge").textContent = `Age ${state.age}`;
     const yrs = 18 - state.age;
     $("ageNote").textContent = (yrs > 0 ? `You'll be 18 in ${THIS_YEAR + yrs}. ` : "") +
-      `Your age changes your results: younger kids see more future jobs and more room for change, and older kids get next steps for school.`;
+      "Your age changes the guess: younger kids see more future jobs and more room for change, and older kids get next steps for school.";
   }
 
   function renderTopicChips() {
-    $("topicChips").innerHTML = TOPIC_KEYS.map(t =>
-      `<li class="chip" style="${tc(t)}">${TOPICS[t].icon} ${esc(TOPICS[t].name)}</li>`).join("");
+    $("topicChips").innerHTML = TOPIC_KEYS.map(t => `<li class="chip" style="${tc(t)}">${topicLabel(t)}</li>`).join("");
   }
 
   // ---------- Quiz ----------
@@ -190,58 +124,70 @@
     window.scrollTo(0, 0);
   }
 
-  function renderQuestion() {
+  function renderQuestion(feedback) {
     const q = state.asked[state.i];
     $("qCount").textContent = `Question ${state.i + 1} of ${TOTAL_QUESTIONS}`;
     $("qFill").style.width = `${(state.i / TOTAL_QUESTIONS) * 100}%`;
     $("qText").textContent = q.q;
-    $("qBecause").hidden = !q.leaders;
-    if (q.leaders) $("qBecause").innerHTML = "Your top topics so far: " +
-      q.leaders.map(t => `<strong>${TOPICS[t].icon} ${esc(TOPICS[t].name)}</strong>`).join(", ") +
-      ". One new challenger joins them.";
+    $("qBecause").hidden = !q.for;
+    if (q.for) $("qBecause").innerHTML = `Because you wrote about <strong>${topicLabel(q.for)}</strong>`;
     $("youngTip").hidden = state.age > 8;
     $("backBtn").disabled = state.i === 0;
-    $("answers").innerHTML = q.a.map(([emo, text], k) =>
-      `<button type="button" class="answer${state.answers[state.i] === k ? " picked" : ""}" data-k="${k}">
-         <span class="emo" aria-hidden="true">${emo}</span><span>${esc(text)}</span><span class="num" aria-hidden="true">${k + 1}</span>
-       </button>`).join("");
-    state.locked = false;
+    $("nextBtn").textContent = state.i === TOTAL_QUESTIONS - 1 ? "Make my guess" : "Next";
+    const input = $("answer");
+    input.value = state.texts[state.i] || "";
+    input.placeholder = q.hint || "Type your answer here…";
+    $("clueBox").hidden = !feedback;
+    if (feedback) $("clueBox").innerHTML = feedback;
+    input.focus();
   }
 
-  function pick(k) {
-    if (state.locked) return;
-    state.locked = true;
-    // Changing an earlier answer throws away the questions after it, since they may be different now.
-    state.asked.length = state.i + 1;
-    state.answers.length = state.i + 1;
-    state.answers[state.i] = k;
-    document.querySelectorAll(".answer").forEach(b => b.classList.toggle("picked", Number(b.dataset.k) === k));
-    setTimeout(() => {
-      if (state.i < TOTAL_QUESTIONS - 1) {
-        state.asked.push(nextQuestion());
-        state.i += 1;
-        renderQuestion();
-      } else finish();
-    }, 260);
+  function feedbackFor(reading, text) {
+    if (!text) return `<span class="muted">Skipped. That's okay!</span>`;
+    const found = Object.entries(reading.clues).filter(([t]) => reading.topics[t] > 0);
+    if (!found.length) return `<span class="muted">I didn't spot any clues in that one. Try adding a few more words next time!</span>`;
+    return "Clues from your last answer: " + found.map(([t, words]) =>
+      `<span class="clue" style="${tc(t)}">${topicLabel(t)} <em>${esc([...new Set(words)].slice(0, 3).join(", "))}</em></span>`).join(" ");
+  }
+
+  function submit() {
+    const q = state.asked[state.i];
+    const text = $("answer").value.trim();
+    const changed = text !== (state.texts[state.i] || "");
+    state.texts[state.i] = text;
+    state.readings[state.i] = Engine.readAnswer(text, q.q, q.named ?? (q.for ? 0.6 : 0.25));
+    // A changed answer can change which follow-ups come next, so drop the
+    // follow-ups after it. The first 15 questions stay, since they never change.
+    if (changed) {
+      const keep = Math.max(state.i + 1, QUESTIONS.length);
+      state.asked.length = Math.min(state.asked.length, keep);
+      state.texts.length = Math.min(state.texts.length, keep);
+      state.readings.length = Math.min(state.readings.length, keep);
+    }
+    const feedback = feedbackFor(state.readings[state.i], text);
+    if (state.i >= TOTAL_QUESTIONS - 1) return finish();
+    state.i += 1;
+    if (!state.asked[state.i]) state.asked.push(nextQuestion());
+    renderQuestion(feedback);
   }
 
   function finish() {
     state.viewAge = state.age;
     state.listLimit = PAGE;
-    const scores = topicScores();
-    const top = rankTopics(scores).slice(0, 3).map(r => r.t);
-    const best = rankedJobs(scores, state.age).slice(0, 3).map(j => j.name);
+    const { s, last } = Engine.tally(state.readings);
+    const top = rankTopics(s, last).filter(r => r.s > 0).slice(0, 3).map(r => r.t);
+    const jobs = Engine.scoreJobs(prepared, state.readings, state.age).slice(0, 3).map(j => j.name);
     const history = store.get("futureMap.history", []);
-    history.push({ date: new Date().toISOString().slice(0, 10), age: state.age, top, jobs: best });
+    history.push({ date: new Date().toISOString().slice(0, 10), age: state.age, top, jobs });
     store.set("futureMap.history", history.slice(-12));
     renderResults();
     show("results");
   }
 
   // ---------- Results ----------
-  function rankedJobs(scores, age) {
-    return jobs.map(j => ({ ...j, pct: matchJob(j, scores, age) }))
-               .sort((a, b) => b.pct - a.pct || a.train - b.train || a.name.localeCompare(b.name));
+  function startInfo(job, age) {
+    const yearsAway = Engine.startYears(job, age);
+    return { startAge: Math.max(18 + job.train, age), yearsAway, year: THIS_YEAR + yearsAway };
   }
 
   function whenText(job, age) {
@@ -261,12 +207,32 @@
     return "";
   }
 
+  // The words from the kid's answers that led to this job.
+  function cluesFor(job, clues) {
+    const words = [];
+    job.topics.forEach(({ t }) => clues[t].forEach(w => { if (!words.includes(w)) words.push(w); }));
+    job.hits.forEach(w => { if (!words.includes(w)) words.push(w); });
+    return words.slice(0, 8);
+  }
+
   function renderResults() {
     const age = state.viewAge;
-    const scores = topicScores();
-    const ranked = rankTopics(scores);
+    const { s, last, clues } = Engine.tally(state.readings);
+    const ranked = rankTopics(s, last);
     const levelOf = Object.fromEntries(ranked.map(r => [r.t, r.level]));
     const topScore = Math.max(1, ranked[0].s);
+    const all = Engine.scoreJobs(prepared, state.readings, age);
+    const totalClues = ranked.reduce((sum, r) => sum + r.s, 0);
+
+    // The big guess
+    const guess = all[0];
+    const why = cluesFor(guess, clues);
+    $("guessName").textContent = guess.name;
+    $("guessDesc").textContent = guess.desc;
+    $("guessWhy").innerHTML = guess.mentioned
+      ? `You told me you want to be this, and your answers fit it too.${why.length ? ` Clues: <strong>${esc(why.join(", "))}</strong>` : ""}`
+      : why.length ? `Clues from your answers: <strong>${esc(why.join(", "))}</strong>` : "";
+    $("fewClues").hidden = totalClues >= 4;
 
     $("resAge").value = age;
     $("resAgeOut").textContent = age;
@@ -275,48 +241,47 @@
     $("changeFill").style.width = st.pct + "%";
     $("changeText").textContent = st.text;
     $("futureText").textContent = futureNote(age);
-    $("resTitle").textContent = `Your Future Map at age ${age}`;
 
     // Topics with importance levels
     $("topicRank").innerHTML = ranked.map(r => `
       <li class="topic-row${r.level === "top" ? " top" : ""}" style="${tc(r.t)}">
         <span class="rank">${r.rank}</span>
-        <span class="name">${TOPICS[r.t].icon} ${esc(TOPICS[r.t].name)} <span class="pts">${r.s} point${r.s === 1 ? "" : "s"}</span></span>
+        <span class="name">${topicLabel(r.t)} <span class="pts">${r.s} point${r.s === 1 ? "" : "s"}</span></span>
         <span class="lvl ${LEVELS[r.level].cls}">${LEVELS[r.level].label}</span>
         <div class="bar-track"><div class="bar-fill" style="width:${(r.s / topScore) * 100}%"></div></div>
+        ${clues[r.t].length ? `<span class="topic-clues">${esc(clues[r.t].slice(0, 6).join(", "))}</span>` : ""}
       </li>`).join("");
 
-    // Top jobs. Younger kids see a couple more ideas since things will change.
-    const all = rankedJobs(scores, age);
+    // Other close guesses. Younger kids see a couple more ideas since things will change.
     const count = age <= 10 ? 10 : 8;
-    $("topJobs").innerHTML = all.slice(0, count).map((j, idx) => jobCard(j, idx, age, levelOf)).join("");
+    $("topJobs").innerHTML = all.slice(1, count + 1).map(j => jobCard(j, age, levelOf)).join("");
 
     // Tips for top 3 topics, tuned to age
     const band = ageBand(age);
     const bandName = ["ages 5–8", "ages 9–12", "ages 13–18"][band];
     $("tips").innerHTML = ranked.slice(0, 3).map(r => `
       <div class="tip" style="${tc(r.t)}">
-        <strong>${TOPICS[r.t].icon} ${esc(TOPICS[r.t].name)}</strong>
+        <strong>${topicLabel(r.t)}</strong>
         <span>${esc(TIPS[r.t][band])}</span>
         <span class="muted small">Idea for ${bandName}</span>
       </div>`).join("");
 
     renderHistory();
     fillTopicFilter();
-    renderAllJobs();
+    renderAllJobs(all);
   }
 
-  function jobCard(j, idx, age, levelOf) {
+  function jobCard(j, age, levelOf) {
     const w = whenText(j, age);
     const o = OUTLOOK[j.outlook];
     const note = outlookNote(j, age);
     const needs = j.topics.map(({ t, w: weight }) => {
       const strong = levelOf[t] === "top" || levelOf[t] === "high";
       return `<li><span class="imp">${IMPORTANCE[weight]}</span>
-        <span${strong ? ' class="yes"' : ""}>${TOPICS[t].icon} ${esc(TOPICS[t].name)}${strong ? " ✓" : ""}</span></li>`;
+        <span${strong ? ' class="yes"' : ""}>${topicLabel(t)}${strong ? " ✓" : ""}</span></li>`;
     }).join("");
     return `
-      <article class="job-card${idx === 0 ? " best" : ""}">
+      <article class="job-card">
         <div class="job-head">
           <h3>${esc(j.name)}</h3>
           <span class="match">${j.pct}%<small>match</small></span>
@@ -340,7 +305,7 @@
       <tr${idx === 0 ? ' class="now"' : ""}>
         <td>${esc(h.date)}${idx === 0 ? " (now)" : ""}</td>
         <td>${esc(h.age)}</td>
-        <td>${(h.top || []).map(t => TOPICS[t] ? `${TOPICS[t].icon} ${esc(TOPICS[t].name)}` : "").join("<br>")}</td>
+        <td>${(h.top || []).map(t => TOPICS[t] ? topicLabel(t) : "").join("<br>")}</td>
         <td>${(h.jobs || []).map(esc).join("<br>")}</td>
       </tr>`).join("");
   }
@@ -349,22 +314,22 @@
     const sel = $("jobTopic");
     if (sel.options.length) return;
     sel.innerHTML = `<option value="">All topics</option>` +
-      TOPIC_KEYS.map(t => `<option value="${t}">${TOPICS[t].icon} ${esc(TOPICS[t].name)}</option>`).join("") +
+      TOPIC_KEYS.map(t => `<option value="${t}">${topicLabel(t)}</option>`).join("") +
       `<option value="future">✨ Future jobs only</option>`;
   }
 
-  function renderAllJobs() {
+  function renderAllJobs(all = Engine.scoreJobs(prepared, state.readings, state.viewAge)) {
     const q = $("jobSearch").value.trim().toLowerCase();
     const topic = $("jobTopic").value;
     const age = state.viewAge;
-    const list = rankedJobs(topicScores(), age).filter(j => {
+    const list = all.filter(j => {
       if (topic === "future" && j.outlook !== "f") return false;
       if (topic && topic !== "future" && !j.topics.some(x => x.t === topic)) return false;
       if (q && !(j.name + " " + j.desc).toLowerCase().includes(q)) return false;
       return true;
     });
     const shown = list.slice(0, state.listLimit);
-    $("jobCount").textContent = `${list.length} of ${jobs.length} jobs match, best match first`;
+    $("jobCount").textContent = `${list.length} of ${all.length} jobs match, best guess first`;
     $("moreJobs").hidden = shown.length >= list.length;
     $("moreJobs").textContent = `Show more jobs (${list.length - shown.length} left)`;
     $("allJobs").innerHTML = shown.map(j => {
@@ -390,24 +355,20 @@
     renderAge();
   });
   $("startBtn").addEventListener("click", () => {
-    state.openers = pickOpeners();
-    state.asked = [state.openers[0]];
-    state.answers = [];
+    state.asked = [QUESTIONS[0]];
+    state.texts = [];
+    state.readings = [];
     state.i = 0;
-    renderQuestion();
     show("quiz");
+    renderQuestion();
   });
-  $("answers").addEventListener("click", e => {
-    const b = e.target.closest(".answer");
-    if (b) pick(Number(b.dataset.k));
+  $("answerForm").addEventListener("submit", e => { e.preventDefault(); submit(); });
+  $("answer").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
   });
+  $("skipBtn").addEventListener("click", () => { $("answer").value = ""; submit(); });
   $("backBtn").addEventListener("click", () => {
     if (state.i > 0) { state.i -= 1; renderQuestion(); }
-  });
-  document.addEventListener("keydown", e => {
-    if ($("quiz").hidden) return;
-    const k = Number(e.key);
-    if (k >= 1 && k <= 4) pick(k - 1);
   });
   $("resAge").addEventListener("input", e => {
     state.viewAge = clampAge(e.target.value);
@@ -426,4 +387,5 @@
 
   renderAge();
   renderTopicChips();
+  $("jobTotal").textContent = JOBS.length;
 })();

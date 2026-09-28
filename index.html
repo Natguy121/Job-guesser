@@ -18,9 +18,9 @@
 <main class="wrap">
   <!-- START -->
   <section id="start" class="screen">
-    <p class="eyebrow">A 20-question job guesser for ages 5 to 18</p>
-    <h1>What could you be when you grow up?</h1>
-    <p class="lead">Pick one answer for each question. Every answer gives a point to one of 20 topics. The first 10 questions are picked from a bank of 210, so they're different almost every time. After that, the questions change based on what you pick: your top topics go head to head until the real favourites win.</p>
+    <p class="eyebrow">A job guessing game for ages 5 to 18</p>
+    <h1>Can I guess your future job?</h1>
+    <p class="lead">Answer 25 questions in your own words. I'll look for clues in what you write, like "dogs", "drawing" or "rockets", and guess which of <strong id="jobTotal">600</strong> jobs could fit you. The last 10 questions change depending on what you write.</p>
 
     <div class="age-card">
       <label for="age" class="age-label">How old are you?</label>
@@ -36,29 +36,42 @@
     <h2 class="h-small">The 20 topics</h2>
     <ul class="topic-chips" id="topicChips"></ul>
 
-    <button class="btn btn-go" id="startBtn" type="button">Start the survey</button>
+    <button class="btn btn-go" id="startBtn" type="button">Start the game</button>
   </section>
 
   <!-- QUIZ -->
   <section id="quiz" class="screen" hidden>
     <div class="progress">
-      <span id="qCount" class="q-count">Question 1 of 20</span>
+      <span id="qCount" class="q-count">Question 1 of 25</span>
       <div class="progress-track"><div class="progress-fill" id="qFill"></div></div>
     </div>
-    <p class="young-tip" id="youngTip" hidden>Tip: ask a grown-up to read the questions with you.</p>
+    <p class="young-tip" id="youngTip" hidden>Tip: a grown-up can read the questions and type what you say. Short answers are fine!</p>
     <p class="because" id="qBecause" hidden></p>
     <h2 id="qText" class="q-text"></h2>
-    <div class="answers" id="answers"></div>
-    <div class="quiz-nav">
-      <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
-      <span class="key-hint">Press 1–4 to answer</span>
-    </div>
+    <form class="answer-form" id="answerForm">
+      <label for="answer" class="sr-only">Your answer</label>
+      <textarea id="answer" rows="3" maxlength="400" autocomplete="off" spellcheck="true"></textarea>
+      <div class="quiz-nav">
+        <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
+        <span class="nav-right">
+          <button class="btn btn-quiet" id="skipBtn" type="button">Skip</button>
+          <button class="btn btn-go btn-next" id="nextBtn" type="submit">Next</button>
+        </span>
+      </div>
+      <p class="key-hint">Press Enter to go on. Shift + Enter makes a new line.</p>
+    </form>
+    <p class="clue-box" id="clueBox" hidden></p>
   </section>
 
   <!-- RESULTS -->
   <section id="results" class="screen" hidden>
-    <p class="eyebrow">Your results</p>
-    <h1 id="resTitle">Your Future Map</h1>
+    <div class="reveal">
+      <p class="eyebrow">My guess is…</p>
+      <h1 id="guessName"></h1>
+      <p class="guess-desc" id="guessDesc"></p>
+      <p class="guess-why" id="guessWhy"></p>
+      <p class="few-clues" id="fewClues" hidden>I only found a few clues, so this is a wild guess. Play again with longer answers for a better one!</p>
+    </div>
 
     <div class="what-if">
       <div class="what-if-top">
@@ -76,10 +89,10 @@
     </div>
 
     <h2>Your topics, most important first</h2>
-    <p class="muted">Points come from your 20 answers. The last 10 questions compared your top topics, so the ones at the top beat the others more than once.</p>
+    <p class="muted">Every clue word in your answers gave a point to a topic. The words under each bar are the clues I found.</p>
     <ol class="topic-rank" id="topicRank"></ol>
 
-    <h2>Jobs that match you best</h2>
+    <h2>My other guesses</h2>
     <p class="muted">Each job lists its topics in order of importance. A ✓ means that topic is one of your strong ones.</p>
     <div class="job-grid" id="topJobs"></div>
 
@@ -107,13 +120,15 @@
     <button class="btn btn-quiet" id="moreJobs" type="button" hidden>Show more jobs</button>
 
     <div class="res-actions">
-      <button class="btn btn-go" id="retakeBtn" type="button">Take it again</button>
+      <button class="btn btn-go" id="retakeBtn" type="button">Play again</button>
     </div>
   </section>
 </main>
 
 <script src="data.js"></script>
-<script src="questions.js"></script>
+<script src="jobs.js"></script>
+<script src="words.js"></script>
+<script src="engine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

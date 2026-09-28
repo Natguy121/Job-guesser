@@ -154,9 +154,35 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 32px; cu
 }
 .answer.picked .num { color: var(--accent-ink); border-color: var(--accent-ink); }
 .quiz-nav { display: flex; justify-content: space-between; align-items: center; }
-.key-hint { font-size: .85rem; color: var(--muted); }
+.key-hint { font-size: .85rem; color: var(--muted); margin: 0; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.answer-form { display: flex; flex-direction: column; gap: 12px; }
+#answer {
+  width: 100%; resize: vertical; min-height: 110px;
+  font: 700 1.2rem/1.45 var(--body); color: var(--ink);
+  background: var(--card); border: 2.5px solid var(--edge); border-radius: 16px;
+  padding: 16px 18px; box-shadow: 4px 4px 0 var(--drop);
+}
+#answer::placeholder { color: var(--muted); font-weight: 400; opacity: .8; }
+#answer:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.nav-right { display: flex; gap: 8px; align-items: center; }
+.btn-next { align-self: auto; padding: 12px 24px; font-size: 1.1rem; }
+.clue-box { background: var(--card); border: 1.5px dashed var(--soft); border-radius: 12px; padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-weight: 700; }
+.clue { display: inline-flex; gap: 6px; align-items: baseline; border-left: 5px solid var(--tc); background: var(--soft); border-radius: 6px; padding: 3px 8px; font-size: .9rem; }
+.clue em { font-style: normal; font-weight: 400; color: var(--muted); }
 
 /* Results */
+.reveal {
+  background: var(--card); border: 2.5px solid var(--edge); border-radius: 20px;
+  box-shadow: 6px 6px 0 var(--accent); padding: 24px; display: flex; flex-direction: column; gap: 10px;
+}
+.reveal h1 { color: var(--accent); font-size: clamp(2.2rem, 8vw, 3.6rem); }
+.guess-desc { font-size: 1.2rem; font-weight: 700; }
+.guess-why { color: var(--muted); max-width: 62ch; }
+.guess-why strong { color: var(--ink); }
+.few-clues { background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; font-weight: 700; }
+.topic-clues { grid-column: 2; font-size: .85rem; color: var(--muted); }
 .meter-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
 .meter { height: 14px; background: var(--soft); border-radius: 99px; overflow: hidden; }
 .meter-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }

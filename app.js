@@ -1,9 +1,10 @@
-// Future Map — page logic for the job guessing game
+// Future Map — page logic for the "guess my job" game
 (function () {
-  const THIS_YEAR = new Date().getFullYear();
   const TOPIC_KEYS = Engine.TOPIC_KEYS;
   const PAGE = 20;
-  const prepared = Engine.prepareJobs(JOBS);
+  const MAX_GUESSES = 10;
+  // Future jobs barely exist yet, so nobody has them today. Leave them out of guessing.
+  const prepared = Engine.prepareJobs(JOBS.filter(j => j[4] !== "f"));
 
   // Spread topic colors around the color wheel; lightness comes from the theme.
   TOPIC_KEYS.forEach((t, i) => { TOPICS[t].hue = Math.round(i * (360 / TOPIC_KEYS.length)); });
@@ -17,60 +18,19 @@
     med:  { label: "Medium",       cls: "lvl-med" },
     low:  { label: "Low",          cls: "lvl-low" },
   };
-  const OUTLOOK = {
-    g: { label: "Growing",    cls: "pill-g" },
-    s: { label: "Steady",     cls: "pill-s" },
-    c: { label: "Changing",   cls: "pill-c" },
-    f: { label: "Future job", cls: "pill-f" },
-  };
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  const store = {
-    get(key, fallback) {
-      try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); }
-      catch (e) { return fallback; }
-    },
-    set(key, value) {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ }
-    },
-  };
-
   const state = {
-    age: clampAge(store.get("futureMap.age", 10)),
-    viewAge: 10,
     asked: [],     // questions shown so far, in order
-    texts: [],     // what the kid typed for each
+    texts: [],     // what the player typed for each
     readings: [],  // Engine.readAnswer result for each
     i: 0,
+    guesses: [],   // jobs ranked best first
+    guessAt: 0,    // which guess is showing
     listLimit: PAGE,
   };
-
-  function clampAge(a) { a = Number(a); return Number.isFinite(a) ? Math.min(18, Math.max(5, Math.round(a))) : 10; }
-
-  // ---------- Age ----------
-  function ageStage(age) {
-    if (age <= 7)  return { pct: 90, label: "Very likely to change",
-      text: `At ${age}, your favourite things can change lots of times, and that's great. Try many different activities and play again next year.` };
-    if (age <= 10) return { pct: 75, label: "Likely to change",
-      text: `At ${age}, your interests are starting to show, but they will keep growing. Notice which topics you keep coming back to.` };
-    if (age <= 13) return { pct: 55, label: "Could change",
-      text: `At ${age}, you're finding out what you're really good at. Some of these topics will stick with you and some will change.` };
-    if (age <= 16) return { pct: 35, label: "Getting clearer",
-      text: `At ${age}, your interests are getting clearer. It's a good time to choose classes and clubs that match your top topics.` };
-    return { pct: 20, label: "Pretty focused",
-      text: `At ${age}, you're close to choosing what comes after school. Check how many years of training the jobs you like need.` };
-  }
-
-  function futureNote(age) {
-    const yrs = 18 - age;
-    if (yrs <= 0) return "You could start working or training right now. Jobs marked Changing are already using new tools like AI, so learning those tools helps.";
-    return `You'll finish school around ${THIS_YEAR + yrs}. That's ${yrs} year${yrs === 1 ? "" : "s"} away, and the world of work will change a lot by then. ` +
-      "Jobs marked Future job barely exist today but could be big when you grow up. Jobs marked Changing will still exist, but robots and AI may do parts of them.";
-  }
-
-  function ageBand(age) { return age <= 8 ? 0 : age <= 12 ? 1 : 2; }
 
   // Rank topics and give each an importance level. Ties go to the topic mentioned most recently.
   function rankTopics(scores, last) {
@@ -84,7 +44,7 @@
 
   // ---------- Picking questions ----------
   // The first 15 are the same for everyone. After that, each question is a
-  // follow-up about one of the top 4 topics found so far, spreading the
+  // follow-up about one of the top 4 areas found so far, spreading the
   // follow-ups between them so no single early answer takes over.
   function nextQuestion() {
     const n = state.asked.length;
@@ -104,20 +64,6 @@
     return left[Math.floor(Math.random() * left.length)];
   }
 
-  // ---------- Start screen ----------
-  function renderAge() {
-    $("ageOut").textContent = state.age;
-    $("age").value = state.age;
-    $("barAge").textContent = `Age ${state.age}`;
-    const yrs = 18 - state.age;
-    $("ageNote").textContent = (yrs > 0 ? `You'll be 18 in ${THIS_YEAR + yrs}. ` : "") +
-      "Your age changes the guess: younger kids see more future jobs and more room for change, and older kids get next steps for school.";
-  }
-
-  function renderTopicChips() {
-    $("topicChips").innerHTML = TOPIC_KEYS.map(t => `<li class="chip" style="${tc(t)}">${topicLabel(t)}</li>`).join("");
-  }
-
   // ---------- Quiz ----------
   function show(id) {
     ["start", "quiz", "results"].forEach(s => { $(s).hidden = s !== id; });
@@ -131,9 +77,8 @@
     $("qText").textContent = q.q;
     $("qBecause").hidden = !q.for;
     if (q.for) $("qBecause").innerHTML = `Because you wrote about <strong>${topicLabel(q.for)}</strong>`;
-    $("youngTip").hidden = state.age > 8;
     $("backBtn").disabled = state.i === 0;
-    $("nextBtn").textContent = state.i === TOTAL_QUESTIONS - 1 ? "Make my guess" : "Next";
+    $("nextBtn").textContent = state.i === TOTAL_QUESTIONS - 1 ? "Guess my job" : "Next";
     const input = $("answer");
     input.value = state.texts[state.i] || "";
     input.placeholder = q.hint || "Type your answer here…";
@@ -143,9 +88,9 @@
   }
 
   function feedbackFor(reading, text) {
-    if (!text) return `<span class="muted">Skipped. That's okay!</span>`;
+    if (!text) return `<span class="muted">Skipped.</span>`;
     const found = Object.entries(reading.clues).filter(([t]) => reading.topics[t] > 0);
-    if (!found.length) return `<span class="muted">I didn't spot any clues in that one. Try adding a few more words next time!</span>`;
+    if (!found.length) return `<span class="muted">I didn't spot any clues in that one. A few more words help!</span>`;
     return "Clues from your last answer: " + found.map(([t, words]) =>
       `<span class="clue" style="${tc(t)}">${topicLabel(t)} <em>${esc([...new Set(words)].slice(0, 3).join(", "))}</em></span>`).join(" ");
   }
@@ -172,42 +117,16 @@
   }
 
   function finish() {
-    state.viewAge = state.age;
+    state.guesses = Engine.scoreJobs(prepared, state.readings, null);
+    state.guessAt = 0;
     state.listLimit = PAGE;
-    const { s, last } = Engine.tally(state.readings);
-    const top = rankTopics(s, last).filter(r => r.s > 0).slice(0, 3).map(r => r.t);
-    const jobs = Engine.scoreJobs(prepared, state.readings, state.age).slice(0, 3).map(j => j.name);
-    const history = store.get("futureMap.history", []);
-    history.push({ date: new Date().toISOString().slice(0, 10), age: state.age, top, jobs });
-    store.set("futureMap.history", history.slice(-12));
+    $("jobSearch").value = "";
     renderResults();
     show("results");
   }
 
   // ---------- Results ----------
-  function startInfo(job, age) {
-    const yearsAway = Engine.startYears(job, age);
-    return { startAge: Math.max(18 + job.train, age), yearsAway, year: THIS_YEAR + yearsAway };
-  }
-
-  function whenText(job, age) {
-    const s = startInfo(job, age);
-    const training = job.train === 0 ? "No extra school needed after 18" : `About ${job.train} year${job.train === 1 ? "" : "s"} of training after school`;
-    const start = s.yearsAway === 0 ? "You could start now" : `Start around age ${s.startAge} (${s.year})`;
-    return { start, training };
-  }
-
-  function outlookNote(job, age) {
-    const s = startInfo(job, age);
-    if (job.outlook === "f") return `This job is still new. It could be much bigger by ${s.year}.`;
-    if (job.outlook === "c") return s.yearsAway > 0
-      ? `By ${s.year}, robots and AI may do parts of this job, so it will look different.`
-      : "Robots and AI are already changing parts of this job.";
-    if (job.outlook === "g") return "More people are expected to be needed for this job.";
-    return "";
-  }
-
-  // The words from the kid's answers that led to this job.
+  // The words from the player's answers that led to this job.
   function cluesFor(job, clues) {
     const words = [];
     job.topics.forEach(({ t }) => clues[t].forEach(w => { if (!words.includes(w)) words.push(w); }));
@@ -215,145 +134,100 @@
     return words.slice(0, 8);
   }
 
+  function renderGuess(done) {
+    const { clues, s } = Engine.tally(state.readings);
+    const guess = state.guesses[state.guessAt];
+    const why = cluesFor(guess, clues);
+    $("guessCount").textContent = done === "yes" ? "Got it!" : `Guess ${state.guessAt + 1}: is your job…`;
+    $("guessName").textContent = guess.name;
+    $("guessDesc").textContent = guess.desc;
+    $("guessWhy").innerHTML = why.length ? `Clues from your answers: <strong>${esc(why.join(", "))}</strong>` : "";
+    $("fewClues").hidden = Object.values(s).reduce((a, b) => a + b, 0) >= 4 || !!done;
+    $("guessAsk").hidden = !!done;
+    $("guessDone").hidden = !done;
+    if (done === "yes") {
+      const n = state.guessAt + 1;
+      $("guessDone").textContent = n === 1 ? "I got it on my first guess!" : `I got it in ${n} guesses!`;
+    } else if (done === "stumped") {
+      $("guessCount").textContent = `Guess ${MAX_GUESSES}`;
+      $("guessDone").textContent = `You stumped me! Find your job in the list below.`;
+    }
+  }
+
   function renderResults() {
-    const age = state.viewAge;
     const { s, last, clues } = Engine.tally(state.readings);
     const ranked = rankTopics(s, last);
     const levelOf = Object.fromEntries(ranked.map(r => [r.t, r.level]));
     const topScore = Math.max(1, ranked[0].s);
-    const all = Engine.scoreJobs(prepared, state.readings, age);
-    const totalClues = ranked.reduce((sum, r) => sum + r.s, 0);
 
-    // The big guess
-    const guess = all[0];
-    const why = cluesFor(guess, clues);
-    $("guessName").textContent = guess.name;
-    $("guessDesc").textContent = guess.desc;
-    $("guessWhy").innerHTML = guess.mentioned
-      ? `You told me you want to be this, and your answers fit it too.${why.length ? ` Clues: <strong>${esc(why.join(", "))}</strong>` : ""}`
-      : why.length ? `Clues from your answers: <strong>${esc(why.join(", "))}</strong>` : "";
-    $("fewClues").hidden = totalClues >= 4;
+    renderGuess();
 
-    $("resAge").value = age;
-    $("resAgeOut").textContent = age;
-    const st = ageStage(age);
-    $("changeLabel").textContent = st.label;
-    $("changeFill").style.width = st.pct + "%";
-    $("changeText").textContent = st.text;
-    $("futureText").textContent = futureNote(age);
+    $("topJobs").innerHTML = state.guesses.slice(0, 8).map((j, idx) => jobCard(j, idx, levelOf)).join("");
 
-    // Topics with importance levels
-    $("topicRank").innerHTML = ranked.map(r => `
+    $("topicRank").innerHTML = ranked.filter(r => r.s > 0).map(r => `
       <li class="topic-row${r.level === "top" ? " top" : ""}" style="${tc(r.t)}">
         <span class="rank">${r.rank}</span>
         <span class="name">${topicLabel(r.t)} <span class="pts">${r.s} point${r.s === 1 ? "" : "s"}</span></span>
         <span class="lvl ${LEVELS[r.level].cls}">${LEVELS[r.level].label}</span>
         <div class="bar-track"><div class="bar-fill" style="width:${(r.s / topScore) * 100}%"></div></div>
         ${clues[r.t].length ? `<span class="topic-clues">${esc(clues[r.t].slice(0, 6).join(", "))}</span>` : ""}
-      </li>`).join("");
+      </li>`).join("") || `<li class="muted">I didn't find any clues this time.</li>`;
 
-    // Other close guesses. Younger kids see a couple more ideas since things will change.
-    const count = age <= 10 ? 10 : 8;
-    $("topJobs").innerHTML = all.slice(1, count + 1).map(j => jobCard(j, age, levelOf)).join("");
-
-    // Tips for top 3 topics, tuned to age
-    const band = ageBand(age);
-    const bandName = ["ages 5–8", "ages 9–12", "ages 13–18"][band];
-    $("tips").innerHTML = ranked.slice(0, 3).map(r => `
-      <div class="tip" style="${tc(r.t)}">
-        <strong>${topicLabel(r.t)}</strong>
-        <span>${esc(TIPS[r.t][band])}</span>
-        <span class="muted small">Idea for ${bandName}</span>
-      </div>`).join("");
-
-    renderHistory();
     fillTopicFilter();
-    renderAllJobs(all);
+    renderAllJobs();
   }
 
-  function jobCard(j, age, levelOf) {
-    const w = whenText(j, age);
-    const o = OUTLOOK[j.outlook];
-    const note = outlookNote(j, age);
+  function trainingText(job) {
+    return job.train === 0 ? "Often no degree needed" : `Usually about ${job.train} year${job.train === 1 ? "" : "s"} of training after school`;
+  }
+
+  function jobCard(j, idx, levelOf) {
     const needs = j.topics.map(({ t, w: weight }) => {
       const strong = levelOf[t] === "top" || levelOf[t] === "high";
       return `<li><span class="imp">${IMPORTANCE[weight]}</span>
         <span${strong ? ' class="yes"' : ""}>${topicLabel(t)}${strong ? " ✓" : ""}</span></li>`;
     }).join("");
     return `
-      <article class="job-card">
+      <article class="job-card${idx === 0 ? " best" : ""}">
         <div class="job-head">
-          <h3>${esc(j.name)}</h3>
+          <h3>${idx + 1}. ${esc(j.name)}</h3>
           <span class="match">${j.pct}%<small>match</small></span>
         </div>
         <p class="job-desc">${esc(j.desc)}</p>
         <ul class="need">${needs}</ul>
-        <div class="job-foot">
-          <span class="pill ${o.cls}">${o.label}</span>
-          <span class="when">${w.start}</span>
-          <span class="muted">${w.training}</span>
-        </div>
-        ${note ? `<p class="outlook-note">${esc(note)}</p>` : ""}
+        <div class="job-foot"><span class="muted">${trainingText(j)}</span></div>
       </article>`;
-  }
-
-  function renderHistory() {
-    const history = store.get("futureMap.history", []);
-    $("historyBox").hidden = history.length < 2;
-    if (history.length < 2) return;
-    $("historyBody").innerHTML = history.slice().reverse().map((h, idx) => `
-      <tr${idx === 0 ? ' class="now"' : ""}>
-        <td>${esc(h.date)}${idx === 0 ? " (now)" : ""}</td>
-        <td>${esc(h.age)}</td>
-        <td>${(h.top || []).map(t => TOPICS[t] ? topicLabel(t) : "").join("<br>")}</td>
-        <td>${(h.jobs || []).map(esc).join("<br>")}</td>
-      </tr>`).join("");
   }
 
   function fillTopicFilter() {
     const sel = $("jobTopic");
     if (sel.options.length) return;
-    sel.innerHTML = `<option value="">All topics</option>` +
-      TOPIC_KEYS.map(t => `<option value="${t}">${topicLabel(t)}</option>`).join("") +
-      `<option value="future">✨ Future jobs only</option>`;
+    sel.innerHTML = `<option value="">All areas</option>` +
+      TOPIC_KEYS.map(t => `<option value="${t}">${topicLabel(t)}</option>`).join("");
   }
 
-  function renderAllJobs(all = Engine.scoreJobs(prepared, state.readings, state.viewAge)) {
+  function renderAllJobs() {
+    const all = state.guesses;
     const q = $("jobSearch").value.trim().toLowerCase();
     const topic = $("jobTopic").value;
-    const age = state.viewAge;
     const list = all.filter(j => {
-      if (topic === "future" && j.outlook !== "f") return false;
-      if (topic && topic !== "future" && !j.topics.some(x => x.t === topic)) return false;
+      if (topic && !j.topics.some(x => x.t === topic)) return false;
       if (q && !(j.name + " " + j.desc).toLowerCase().includes(q)) return false;
       return true;
     });
     const shown = list.slice(0, state.listLimit);
-    $("jobCount").textContent = `${list.length} of ${all.length} jobs match, best guess first`;
+    $("jobCount").textContent = `${list.length} of ${all.length} jobs, best guess first`;
     $("moreJobs").hidden = shown.length >= list.length;
     $("moreJobs").textContent = `Show more jobs (${list.length - shown.length} left)`;
-    $("allJobs").innerHTML = shown.map(j => {
-      const w = whenText(j, age);
-      const o = OUTLOOK[j.outlook];
-      return `<li>
+    $("allJobs").innerHTML = shown.map(j => `<li>
         <span class="jl-name">${esc(j.name)}</span>
         <span class="jl-pct">${j.pct}%</span>
         <span class="jl-desc">${esc(j.desc)}</span>
-        <span class="jl-meta">
-          <span class="pill ${o.cls}">${o.label}</span>
-          <span>${w.start}</span>
-          <span class="mini-topic">${j.topics.map(x => TOPICS[x.t].icon).join(" ")}</span>
-        </span>
-      </li>`;
-    }).join("") || `<li class="muted">No jobs match that search. Try a different word or topic.</li>`;
+        <span class="jl-meta"><span class="mini-topic">${j.topics.map(x => TOPICS[x.t].icon).join(" ")}</span></span>
+      </li>`).join("") || `<li class="muted">No jobs match that search. Try a different word or area.</li>`;
   }
 
   // ---------- Events ----------
-  $("age").addEventListener("input", e => {
-    state.age = clampAge(e.target.value);
-    store.set("futureMap.age", state.age);
-    renderAge();
-  });
   $("startBtn").addEventListener("click", () => {
     state.asked = [QUESTIONS[0]];
     state.texts = [];
@@ -370,22 +244,18 @@
   $("backBtn").addEventListener("click", () => {
     if (state.i > 0) { state.i -= 1; renderQuestion(); }
   });
-  $("resAge").addEventListener("input", e => {
-    state.viewAge = clampAge(e.target.value);
-    renderResults();
+  $("yesBtn").addEventListener("click", () => renderGuess("yes"));
+  $("noBtn").addEventListener("click", () => {
+    if (state.guessAt >= MAX_GUESSES - 1) return renderGuess("stumped");
+    state.guessAt += 1;
+    renderGuess();
   });
   const resetList = () => { state.listLimit = PAGE; renderAllJobs(); };
   $("jobSearch").addEventListener("input", resetList);
   $("jobTopic").addEventListener("change", resetList);
   $("moreJobs").addEventListener("click", () => { state.listLimit += PAGE; renderAllJobs(); });
-  $("retakeBtn").addEventListener("click", () => { renderAge(); show("start"); });
-  $("clearHistory").addEventListener("click", () => {
-    const h = store.get("futureMap.history", []);
-    store.set("futureMap.history", h.slice(-1));
-    renderHistory();
-  });
+  $("retakeBtn").addEventListener("click", () => show("start"));
 
-  renderAge();
-  renderTopicChips();
-  $("jobTotal").textContent = JOBS.length;
+  $("topicChips").innerHTML = TOPIC_KEYS.map(t => `<li class="chip" style="${tc(t)}">${topicLabel(t)}</li>`).join("");
+  $("jobTotal").textContent = prepared.list.length;
 })();

@@ -132,8 +132,8 @@ const Engine = (function () {
       const hits = [...j.words].filter(w => said.has(w));
       const direct = Math.min(1, hits.reduce((sum, w) => sum + j.weights.get(w), 0) / 2.5);
       const mention = named.get(j.name) || 0;  // -1 to 1
-      const yrs = Math.min(15, startYears(j, age));
-      const mod = { f: 1 + 0.012 * yrs, g: 1 + 0.004 * yrs, s: 1, c: 1 - 0.008 * yrs }[j.outlook];
+      const yrs = age == null ? 0 : Math.min(15, startYears(j, age));
+      const mod = age == null ? 1 : { f: 1 + 0.012 * yrs, g: 1 + 0.004 * yrs, s: 1, c: 1 - 0.008 * yrs }[j.outlook];
       const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod;
       return { ...j, pct: Math.max(0, Math.min(99, Math.round(score * 100))), score, hits, mentioned: mention >= 0.5 };
     }).sort((a, b) => b.score - a.score || a.train - b.train || a.name.localeCompare(b.name));

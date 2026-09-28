@@ -18,22 +18,11 @@
 <main class="wrap">
   <!-- START -->
   <section id="start" class="screen">
-    <p class="eyebrow">A job guessing game for ages 5 to 18</p>
-    <h1>Can I guess your future job?</h1>
-    <p class="lead">Answer 25 questions in your own words. I'll look for clues in what you write, like "dogs", "drawing" or "rockets", and guess which of <strong id="jobTotal">600</strong> jobs could fit you. The last 10 questions change depending on what you write.</p>
+    <p class="eyebrow">A job guessing game for grown-ups</p>
+    <h1>Can I guess your job?</h1>
+    <p class="lead">Answer 25 questions about your work in your own words, but don't say the name of your job! I'll look for clues in what you write, like "patients", "spreadsheets" or "wrench", and try to guess which of <strong id="jobTotal">580</strong> jobs you do. The last 10 questions change depending on what you write.</p>
 
-    <div class="age-card">
-      <label for="age" class="age-label">How old are you?</label>
-      <div class="age-row">
-        <output id="ageOut" for="age" class="age-num">10</output>
-        <span class="age-unit">years old</span>
-      </div>
-      <input type="range" id="age" min="5" max="18" step="1" value="10">
-      <div class="age-scale" aria-hidden="true"><span>5</span><span>8</span><span>11</span><span>14</span><span>18</span></div>
-      <p class="age-note" id="ageNote"></p>
-    </div>
-
-    <h2 class="h-small">The 20 topics</h2>
+    <h2 class="h-small">I look for clues in 20 areas</h2>
     <ul class="topic-chips" id="topicChips"></ul>
 
     <button class="btn btn-go" id="startBtn" type="button">Start the game</button>
@@ -45,7 +34,6 @@
       <span id="qCount" class="q-count">Question 1 of 25</span>
       <div class="progress-track"><div class="progress-fill" id="qFill"></div></div>
     </div>
-    <p class="young-tip" id="youngTip" hidden>Tip: a grown-up can read the questions and type what you say. Short answers are fine!</p>
     <p class="because" id="qBecause" hidden></p>
     <h2 id="qText" class="q-text"></h2>
     <form class="answer-form" id="answerForm">
@@ -66,54 +54,32 @@
   <!-- RESULTS -->
   <section id="results" class="screen" hidden>
     <div class="reveal">
-      <p class="eyebrow">My guess is…</p>
+      <p class="eyebrow" id="guessCount">Guess 1</p>
       <h1 id="guessName"></h1>
       <p class="guess-desc" id="guessDesc"></p>
       <p class="guess-why" id="guessWhy"></p>
-      <p class="few-clues" id="fewClues" hidden>I only found a few clues, so this is a wild guess. Play again with longer answers for a better one!</p>
+      <p class="few-clues" id="fewClues" hidden>I only found a few clues, so this is a wild guess. Longer answers help!</p>
+      <div class="guess-actions" id="guessAsk">
+        <span class="h-small">Did I get it?</span>
+        <button class="btn btn-go" id="yesBtn" type="button">Yes!</button>
+        <button class="btn" id="noBtn" type="button">No, guess again</button>
+      </div>
+      <p class="guess-done" id="guessDone" hidden></p>
     </div>
 
-    <div class="what-if">
-      <div class="what-if-top">
-        <label for="resAge" class="h-small">Age: <strong id="resAgeOut">10</strong></label>
-        <span class="muted small">Slide to see what changes at other ages</span>
-      </div>
-      <input type="range" id="resAge" min="5" max="18" step="1" value="10">
-      <div class="meter-row">
-        <span class="small">How much could this change?</span>
-        <strong id="changeLabel"></strong>
-      </div>
-      <div class="meter"><div class="meter-fill" id="changeFill"></div></div>
-      <p id="changeText"></p>
-      <p id="futureText" class="muted"></p>
-    </div>
-
-    <h2>Your topics, most important first</h2>
-    <p class="muted">Every clue word in your answers gave a point to a topic. The words under each bar are the clues I found.</p>
-    <ol class="topic-rank" id="topicRank"></ol>
-
-    <h2>My other guesses</h2>
-    <p class="muted">Each job lists its topics in order of importance. A ✓ means that topic is one of your strong ones.</p>
+    <h2>My top guesses</h2>
+    <p class="muted">Each job lists the areas it needs, most important first. A ✓ means I found lots of clues for that area.</p>
     <div class="job-grid" id="topJobs"></div>
 
-    <h2>Things to try now</h2>
-    <div class="tips" id="tips"></div>
-
-    <div id="historyBox" hidden>
-      <h2>How your results changed</h2>
-      <div class="table-scroll">
-        <table class="history">
-          <thead><tr><th>Date</th><th>Age</th><th>Top topics</th><th>Top jobs</th></tr></thead>
-          <tbody id="historyBody"></tbody>
-        </table>
-      </div>
-      <button class="btn btn-quiet small" id="clearHistory" type="button">Clear saved results</button>
-    </div>
+    <h2>The clues I found</h2>
+    <p class="muted">Every clue word in your answers gave a point to an area. The words under each bar are the clues.</p>
+    <ol class="topic-rank" id="topicRank"></ol>
 
     <h2>Browse every job</h2>
+    <p class="muted">Stumped me? Find your job here.</p>
     <div class="filters">
-      <input type="search" id="jobSearch" placeholder="Search jobs, like 'animals' or 'pilot'">
-      <select id="jobTopic" aria-label="Filter by topic"></select>
+      <input type="search" id="jobSearch" placeholder="Search jobs, like 'nurse' or 'pilot'">
+      <select id="jobTopic" aria-label="Filter by area"></select>
     </div>
     <p class="muted small" id="jobCount"></p>
     <ul class="job-list" id="allJobs"></ul>

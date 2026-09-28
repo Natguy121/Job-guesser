@@ -1,12 +1,12 @@
 # Future Map
 
-A job guessing game for grown-ups. The player answers 25 questions about their work in their own words, without saying their job's name, and the game guesses what they do. Open `index.html` in any browser. It needs no install or build step.
+A job guessing game for grown-ups. The player answers 18 questions about their work in their own words, without saying their job's name, and the game guesses what they do. Open `index.html` in any browser. It needs no install or build step.
 
 ## How it works
 
-1. **25 questions, answered in the player's own words.**
-   - The first 15 are the same for everyone ("What do you spend most of a normal workday doing?", "What do you wear to work?").
-   - The last 10 are follow-ups about the areas the game has found the most clues for ("Because you wrote about Health & Medicine…"), so they change with each player.
+1. **18 questions, answered in the player's own words.**
+   - The first 12 are the same for everyone ("What do you spend most of a normal workday doing?", "What do you wear to work?").
+   - The last 6 are follow-ups about the areas the game has found the most clues for ("Because you wrote about Health & Medicine…"), so they change with each player.
    - After each answer the game shows the clues it found, like "🩺 Health & Medicine: patients, ward".
 2. **Reading the answers** (`engine.js`, no internet or AI needed):
    - `words.js` lists clue words for each of 20 areas. Each clue word gives its area a point (at most 2 per answer).

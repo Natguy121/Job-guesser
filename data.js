@@ -25,7 +25,7 @@ const TOPICS = {
 };
 
 // The player is a grown-up, and the game guesses the job they have now.
-// Everyone answers these 15 first, in their own words.
+// Everyone answers these 12 first, in their own words.
 // "hint" is shown faintly in the answer box. "named" is how much saying a job
 // name counts (default 0.25). Players are asked not to say their job's name.
 const QUESTIONS = [
@@ -35,18 +35,15 @@ const QUESTIONS = [
   { q: "Who do you work with or help the most?", hint: "Like: customers, patients, kids, animals, my team…" },
   { q: "What did you study or train in to do your job?", hint: "Like: nursing school, an apprenticeship, a business degree…", named: 0.6 },
   { q: "What's the best part of your job?", hint: "Like: seeing a patient get better, building something…" },
-  { q: "What's the hardest part of your job?", hint: "Like: long shifts, tight deadlines, difficult customers…" },
   { q: "What do you wear to work?", hint: "Like: a suit, scrubs, a uniform, a hard hat, whatever I want…" },
   { q: "What problems do people bring to you?", hint: "Like: broken cars, sick pets, tax questions…" },
   { q: "What do you make, fix, sell or deliver?", hint: "Like: software, meals, houses, advice…" },
   { q: "What skills do you use the most?", hint: "Like: math, patience, strength, writing, being creative…" },
-  { q: "What does the first hour of your workday look like?", hint: "Like: checking the schedule, opening the shop…" },
-  { q: "What kind of place do you work for?", hint: "Like: a big company, a school, a hospital, my own business…" },
   { q: "What do people usually ask you when they find out what you do?", hint: "Like: 'Can you fix my computer?'" },
   { q: "Describe your job in one sentence, without saying its name.", hint: "Like: I help people who…" },
 ];
 
-// Follow-up questions (2 per topic). After the first 15, the game asks about
+// Follow-up questions (2 per topic). After the first 12, the game asks about
 // the topics it has found the most clues for. Naming a job here counts 0.6.
 const FOLLOWUPS = [
   { for: "sci", q: "What do you study, test or research at work?" },
@@ -91,4 +88,4 @@ const FOLLOWUPS = [
   { for: "fod", q: "What part does food play in your job?" },
 ];
 
-const TOTAL_QUESTIONS = 25;
+const TOTAL_QUESTIONS = 18;

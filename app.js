@@ -43,7 +43,7 @@
   }
 
   // ---------- Picking questions ----------
-  // The first 15 are the same for everyone. After that, each question is a
+  // The first 12 are the same for everyone. After that, each question is a
   // follow-up about one of the top 4 areas found so far, spreading the
   // follow-ups between them so no single early answer takes over.
   function nextQuestion() {
@@ -102,7 +102,7 @@
     state.texts[state.i] = text;
     state.readings[state.i] = Engine.readAnswer(text, q.q, q.named ?? (q.for ? 0.6 : 0.25));
     // A changed answer can change which follow-ups come next, so drop the
-    // follow-ups after it. The first 15 questions stay, since they never change.
+    // follow-ups after it. The first 12 questions stay, since they never change.
     if (changed) {
       const keep = Math.max(state.i + 1, QUESTIONS.length);
       state.asked.length = Math.min(state.asked.length, keep);

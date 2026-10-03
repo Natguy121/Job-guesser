@@ -51,7 +51,7 @@ const JOBS = [
   ["Electrical Engineer", "Designs circuits and power systems", "eng3 elec3", 4, "g"],
   ["Carpenter", "Builds things out of wood, from shelves to houses", "build3 craft1", 3, "s"],
   ["Electrician", "Installs and fixes wiring and lights", "elec3 build2 repair1", 4, "g"],
-  ["Plumber", "Fixes pipes, sinks and water heaters", "build3 repair2 service1", 4, "s"],
+  ["Plumber", "Fixes leaky pipes, toilets, drains, sinks and boilers", "build3 repair2 service1", 4, "s"],
   ["Car Mechanic", "Fixes cars and keeps them running safely", "repair3 drive1", 2, "c"],
   ["Electric Vehicle Technician", "Repairs electric cars and charging stations", "repair3 code2 elec1", 2, "g"],
   ["Welder", "Joins metal together with super-hot flames", "build3 repair2 craft1", 2, "s"],

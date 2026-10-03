@@ -105,6 +105,11 @@ const Engine = (function () {
       r.answer = first ? (YES.includes(first) ? "yes" : "no") : null;
       if (r.answer && q[r.answer]) boost(q[r.answer]);
       if (q.degree && r.answer) r.degree = r.answer === "yes";
+    } else if (q.kind === "path") {
+      const t = " " + tokens.join(" ") + " ";
+      const uni = /\b(university|uni|degree|college|phd|masters|doctorate|bachelors|med school|law school)\b/.test(t);
+      const noUni = /\b(apprentice\w*|no degree|didnt go|left school|on the job|certificate|license|licence|academy|luck|worked my way)\b/.test(t);
+      if (uni !== noUni) r.degree = uni;
     } else if (q.kind === "inout") {
       const both = tokens.includes("both") || (tokens.some(w => IN.includes(w)) && tokens.some(w => OUT.includes(w)));
       r.answer = both ? "both" : tokens.some(w => OUT.includes(w)) ? "outside" : tokens.some(w => IN.includes(w)) ? "inside" : null;

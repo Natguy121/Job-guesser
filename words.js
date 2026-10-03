@@ -68,7 +68,7 @@ const TOPIC_WORDS = {
   pets: "pet pets dog dogs puppy puppies cat cats kitten rabbit rabbits hamster vet veterinarian veterinary groom grooming neuter vaccine vaccines leash",
   wild: "animal animals zoo wildlife wild lion lions tiger tigers elephant elephants monkey monkeys giraffe giraffes bird birds fish dolphin whale shark penguin enclosure enclosures enrichment marine aquarium horse horses cow cows chicken chickens sheep pony bunny bear bears reptile snake lizard turtle frog insect insects butterfly bee bees hive hives pig panda wolf fox deer",
   // Sport and fitness
-  sport: "sport sports soccer football basketball baseball tennis hockey golf athlete athletic match matches score goal goals league championship tournament olympic race racing swim swimming swimmer ball skate skating skateboard ski skiing karate taekwondo martial boxing olympics medal champion volleyball cycling fast",
+  sport: "sport sports soccer football basketball baseball tennis hockey golf athlete athletic match matches score goal goals league championship tournament olympic race racing swim swimming swimmer ball skate skating skateboard ski skiing karate taekwondo martial boxing olympics medal champion volleyball cycling fast parkour freerun freerunning freerunner vault vaulting tactics squad transfer transfers stadium pitch striker referee",
   fit: "fitness fit gym workout workouts exercise weights cardio reps squat strength yoga protein running run runner gymnastic strong",
   // Travel and adventure
   travel: "travel traveling travelling trip trips tour tourist tourists hotel passport abroad world cruise vacation culture",
@@ -113,5 +113,9 @@ const ALIASES = {
   "pharmacy school": "Pharmacist", "computer science": "Software Developer", "electrician apprenticeship": "Electrician",
   "plumbing apprenticeship": "Plumber", "carpentry": "Carpenter", "architecture school": "Architect", "journalism": "Journalist",
   "wiring": "Electrician", "electrical": "Electrician", "electrician": "Electrician",
+  "football manager": "Football Manager", "soccer manager": "Football Manager", "manager of a football club": "Football Manager",
+  "parkour": "Parkour Athlete", "freerunner": "Parkour Athlete", "traceur": "Parkour Athlete", "lorry driver": "Truck Driver",
+  "estate agent": "Real Estate Agent", "gp": "General Practitioner", "family doctor": "General Practitioner", "binman": "Refuse Collector",
+  "garbage man": "Refuse Collector", "postman": "Mail Carrier", "postwoman": "Mail Carrier", "lollipop lady": "School Crossing Guard",
   "engineer": "Mechanical Engineer", "inventor": "Inventor", "magician": "Magician", "dancer": "Dancer",
 };

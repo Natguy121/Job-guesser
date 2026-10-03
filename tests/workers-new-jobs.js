@@ -1,0 +1,8 @@
+// Pretend workers for jobs added in the 1,000-job update.
+module.exports = [
+ { job: "Football Manager", a: ["outside, on the touchline","no, a tracksuit or a suit","no, coaching badges","no","yes, fans and the press","a notebook with tactics","picking the team for saturday","the club owner","getting sacked if we lose","formation","a half time orange","I pick the team and plan tactics for a football club"], x: ["transfers and the squad","press conferences after matches","I tell the players how to play"] },
+ { job: "Parkour Athlete", a: ["outside, all over the city","no, trainers and joggers","no","yes, hands and feet","sometimes at shows","chalk and tape","jumping between walls","myself","falling off rooftops","precision jump","an energy bar","I run, jump and climb over obstacles in the city"], x: ["vaults and flips","freerunning competitions","I make videos of my runs"] },
+ { job: "Barber", a: ["inside","no","no","yes","yes","clippers and a comb","giving a fade","the shop owner","cutting an ear","skin fade","a sharp lemon","I cut and shave men's hair"], x: ["beards and haircuts","clippers and razors","men come in every day"] },
+ { job: "Refuse Collector", a: ["outside","yes hi vis","no","yes","sort of, people on the street","gloves","emptying bins on my route","the depot manager","heavy bins","collection day","leftovers","I empty everyone's bins and take the rubbish away"], x: ["rubbish and recycling","the bin lorry","early mornings"] },
+ { job: "Drummer", a: ["inside, on stage","no","no","yes","yes, crowds","drumsticks","rehearsing with the band","the band leader","going deaf","paradiddle","a drumstick chicken leg","I keep the beat in a band"], x: ["drums and cymbals","gigs and tours","recording songs"] },
+];

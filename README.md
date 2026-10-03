@@ -16,7 +16,7 @@ A job guessing game for grown-ups. The player climbs a ladder of 18 quick questi
    - The "Who's your boss?" answer hints at your field but can't name your job (so "the principal" doesn't make a teacher a principal).
    - Training phrases like "nursing school" or "police academy" point straight at a job.
 4. **The guess.** Every job gets a score from how well the player's areas fit the job's areas (weighted 3/2/1), words that match the job's own description, and job names or training phrases. Common jobs get a small boost, because a random player is far more likely to be a nurse than a primatologist. After a drumroll the game asks "Is it…?" and on "No" tries its next guess, up to 10. Confetti when it's right.
-5. **597 real jobs** (`jobs.js`). The file also has 42 invented future jobs (like Space Farmer) that are left out of guessing.
+5. **1,004 real jobs** (`jobs.js`), from nurses and plumbers to football managers, parkour athletes, sled dog mushers and ice sculptors. The file also has 42 invented future jobs (like Space Farmer) that are left out of guessing.
 
 ## Accuracy
 
@@ -25,10 +25,11 @@ A job guessing game for grown-ups. The player climbs a ladder of 18 quick questi
 ```
 node tests/measure.js                    # 40 workers the tags were tuned on
 node tests/measure.js workers-unseen-2   # 15 workers written after tuning
+node tests/measure.js workers-new-jobs   # 5 workers with newer jobs (football manager, parkour…)
 node tests/measure.js workers -v         # list the misses
 ```
 
-On the 15 workers written after tuning: first guess 73%, top 3 93%, top 5 100% (the 20-area version before this got 67% and 73%). These are made-up answers, so real players will trip it up more often.
+On the 15 workers written after tuning: first guess 73%, top 3 93%, top 5 100% (the 20-area version got 67% and 73%). More jobs means more lookalikes to choose between, so a few close calls (Guitarist vs Musician, Football Scout vs Football Manager) still go the wrong way first. These are made-up answers, so real players will trip it up more often.
 
 ## Editing
 

@@ -78,6 +78,36 @@ const Engine = (function () {
     return { tokens: tokens.map(norm), topics, clues, words, nameWeight };
   }
 
+  const YES = "yes yeah yep yup ya yea sure definitely absolutely always usually mostly correct".split(" ");
+  const NO = "no nope nah never not rarely hardly".split(" ");
+  const IN = "inside indoors indoor office in".split(" ");
+  const OUT = "outside outdoors outdoor out".split(" ");
+
+  // Read an answer to a question, including yes/no and inside/outside questions.
+  function readFor(q, text) {
+    const tokens = tokenize(text);
+    // On yes/no questions the first "yes" or "no" answers the question, so read
+    // the rest on its own: "no, police academy" must not mean "not police academy".
+    const yn = q.kind === "yesno" ? tokens.findIndex(w => YES.includes(w) || NO.includes(w)) : -1;
+    const rest = yn >= 0 ? tokens.slice(yn + 1).join(" ") : text;
+    const r = readAnswer(rest, q.q, q.named ?? (q.for ? 0.6 : 0.25));
+    // Fun questions ("If your job was a food…") count less and can ignore areas.
+    if (q.ignore) q.ignore.split(" ").forEach(t => { delete r.topics[t]; delete r.clues[t]; });
+    if (q.weight) Object.keys(r.topics).forEach(t => { r.topics[t] *= q.weight; });
+    const boost = list => list.split(" ").forEach(t => { r.topics[t] = Math.min(2, (r.topics[t] || 0) + 0.5); });
+    if (q.kind === "yesno") {
+      const first = tokens.find(w => YES.includes(w) || NO.includes(w));
+      r.answer = first ? (YES.includes(first) ? "yes" : "no") : null;
+      if (r.answer && q[r.answer]) boost(q[r.answer]);
+      if (q.degree && r.answer) r.degree = r.answer === "yes";
+    } else if (q.kind === "inout") {
+      const both = tokens.includes("both") || (tokens.some(w => IN.includes(w)) && tokens.some(w => OUT.includes(w)));
+      r.answer = both ? "both" : tokens.some(w => OUT.includes(w)) ? "outside" : tokens.some(w => IN.includes(w)) ? "inside" : null;
+      if (r.answer === "inside" || r.answer === "outside") boost(INOUT[r.answer]);
+    }
+    return r;
+  }
+
   // Combine all answers.
   function tally(readings) {
     const s = Object.fromEntries(TOPIC_KEYS.map(k => [k, 0]));
@@ -123,6 +153,7 @@ const Engine = (function () {
     const best = Math.max(1, ...Object.values(s));
     const named = mentions(readings, prepared);
     const said = new Set(readings.flatMap(r => (r ? r.words : [])));
+    const degree = readings.reduce((d, r) => (r && r.degree != null ? r.degree : d), null);
     return prepared.list.map(j => {
       let got = 0, max = 0;
       j.topics.forEach(({ t, w }) => { got += w * s[t]; max += w * best; });
@@ -134,10 +165,14 @@ const Engine = (function () {
       const mention = named.get(j.name) || 0;  // -1 to 1
       const yrs = age == null ? 0 : Math.min(15, startYears(j, age));
       const mod = age == null ? 1 : { f: 1 + 0.012 * yrs, g: 1 + 0.004 * yrs, s: 1, c: 1 - 0.008 * yrs }[j.outlook];
-      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod;
+      // "Did you need a degree?" nudges jobs by how long their training is.
+      const deg = degree == null ? 1 : degree
+        ? (j.train >= 4 ? 1.15 : j.train <= 1 ? 0.75 : 0.95)
+        : (j.train >= 4 ? 0.7 : j.train <= 2 ? 1.1 : 1);
+      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod * deg;
       return { ...j, pct: Math.max(0, Math.min(99, Math.round(score * 100))), score, hits, mentioned: mention >= 0.5 };
     }).sort((a, b) => b.score - a.score || a.train - b.train || a.name.localeCompare(b.name));
   }
 
-  return { tokenize, readAnswer, tally, prepareJobs, scoreJobs, startYears, TOPIC_KEYS };
+  return { tokenize, readAnswer, readFor, tally, prepareJobs, scoreJobs, startYears, TOPIC_KEYS };
 })();

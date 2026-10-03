@@ -19,21 +19,28 @@
   <!-- START -->
   <section id="start" class="screen">
     <p class="eyebrow">A job guessing game for grown-ups</p>
-    <h1>Can I guess your job?</h1>
-    <p class="lead">Answer 18 questions about your work in your own words, but don't say the name of your job! I'll look for clues in what you write, like "patients", "spreadsheets" or "wrench", and try to guess which of <strong id="jobTotal">580</strong> jobs you do. The last 6 questions change depending on what you write.</p>
+    <h1>Climb the ladder. I'll guess your job.</h1>
+    <p class="lead">18 quick questions, one rung each. Inside or outside? Uniform? What's in your pockets? Type your answers, but don't say the name of your job! I'll share my hunch as we climb, and at the top I'll guess which of <strong id="jobTotal">580</strong> jobs you do.</p>
+
+    <fieldset class="clock-pick">
+      <legend class="h-small">Play against the clock?</legend>
+      <label><input type="radio" name="clock" value="120" checked> 2 minutes, like the street videos</label>
+      <label><input type="radio" name="clock" value="0"> No clock, take your time</label>
+    </fieldset>
 
     <h2 class="h-small">I look for clues in 20 areas</h2>
     <ul class="topic-chips" id="topicChips"></ul>
 
-    <button class="btn btn-go" id="startBtn" type="button">Start the game</button>
+    <button class="btn btn-go" id="startBtn" type="button">Step onto the ladder</button>
   </section>
 
   <!-- QUIZ -->
   <section id="quiz" class="screen" hidden>
-    <div class="progress">
-      <span id="qCount" class="q-count">Question 1 of 18</span>
-      <div class="progress-track"><div class="progress-fill" id="qFill"></div></div>
+    <div class="ladder-head">
+      <span id="qCount" class="q-count">Rung 1 of 18</span>
+      <span class="clock" id="clock" hidden>2:00</span>
     </div>
+    <div class="ladder" id="ladder" aria-hidden="true"></div>
     <p class="because" id="qBecause" hidden></p>
     <h2 id="qText" class="q-text"></h2>
     <form class="answer-form" id="answerForm">
@@ -48,12 +55,14 @@
       </div>
       <p class="key-hint">Press Enter to go on. Shift + Enter makes a new line.</p>
     </form>
+    <p class="hunch" id="hunch" hidden></p>
     <p class="clue-box" id="clueBox" hidden></p>
   </section>
 
   <!-- RESULTS -->
   <section id="results" class="screen" hidden>
     <div class="reveal">
+      <p class="eyebrow" id="timeUp" hidden>Time's up!</p>
       <p class="eyebrow" id="guessCount">Guess 1</p>
       <h1 id="guessName"></h1>
       <p class="guess-desc" id="guessDesc"></p>

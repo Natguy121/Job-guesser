@@ -25,23 +25,34 @@ const TOPICS = {
 };
 
 // The player is a grown-up, and the game guesses the job they have now.
+// Quick-fire questions in the style of street "guess my job" videos.
 // Everyone answers these 12 first, in their own words.
+// kind "yesno": a yes adds a little to the "yes" areas, a no to the "no" areas.
+// degree: a yes favours jobs with 4+ years of training, a no favours short training.
+// kind "inout": inside/outside favours the areas listed in INOUT.
+// ignore: areas this question's answer doesn't count for. weight: how much it counts (default 1).
 // "hint" is shown faintly in the answer box. "named" is how much saying a job
 // name counts (default 0.25). Players are asked not to say their job's name.
 const QUESTIONS = [
-  { q: "What do you spend most of a normal workday doing?", hint: "Like: answering emails, fixing pipes, teaching a class…" },
-  { q: "Where do you usually work?", hint: "Like: an office, outside, a hospital, a kitchen, at home…" },
-  { q: "What tools, machines or programs do you use the most?", hint: "Like: a laptop, a wrench, a stethoscope, an oven…" },
-  { q: "Who do you work with or help the most?", hint: "Like: customers, patients, kids, animals, my team…" },
-  { q: "What did you study or train in to do your job?", hint: "Like: nursing school, an apprenticeship, a business degree…", named: 0.6 },
-  { q: "What's the best part of your job?", hint: "Like: seeing a patient get better, building something…" },
-  { q: "What do you wear to work?", hint: "Like: a suit, scrubs, a uniform, a hard hat, whatever I want…" },
-  { q: "What problems do people bring to you?", hint: "Like: broken cars, sick pets, tax questions…" },
-  { q: "What do you make, fix, sell or deliver?", hint: "Like: software, meals, houses, advice…" },
-  { q: "What skills do you use the most?", hint: "Like: math, patience, strength, writing, being creative…" },
-  { q: "What do people usually ask you when they find out what you do?", hint: "Like: 'Can you fix my computer?'" },
-  { q: "Describe your job in one sentence, without saying its name.", hint: "Like: I help people who…" },
+  { q: "Inside or outside?", hint: "Inside, outside or both", kind: "inout" },
+  { q: "Do you wear a uniform?", hint: "Yes or no. Tell me more if you like", kind: "yesno",
+    yes: "saf hlp fod mec spc spo", no: "tec art biz wrd mda lea" },
+  { q: "Did you need a university degree?", hint: "Yes or no", kind: "yesno", degree: true, named: 0.6 },
+  { q: "Do you work with your hands?", hint: "Yes or no", kind: "yesno",
+    yes: "bld mec art fod hlp ani", no: "tec biz lea wrd tea" },
+  { q: "Do you deal with the public every day?", hint: "Yes or no", kind: "yesno",
+    yes: "car biz fod hlp tea saf prf", no: "tec sci bld wrd mec" },
+  { q: "What's in your pockets or bag at work?", hint: "Like: a pen, keys, a stethoscope, a tape measure…" },
+  { q: "What are you doing at work right now, at this time of day?", hint: "Like: in a meeting, on a ladder, in surgery…" },
+  { q: "Who's your boss?", hint: "Like: the head chef, the principal, me!" },
+  { q: "What's the most dangerous part of your job?", hint: "Like: knives, angry customers, paper cuts…" },
+  { q: "Give me a word people would only hear at your job.", hint: "Like: 'stat', 'deadline', 'eighty-six'…" },
+  { q: "If your job was a food, what would it be?", hint: "Anything goes. Why that food?", ignore: "fod", weight: 0.5 },
+  { q: "Last one before the follow-ups: give me your best clue, without saying your job.", hint: "Like: I help people who…", named: 0.6 },
 ];
+
+// Which areas count as mostly inside or mostly outside work.
+const INOUT = { inside: "tec biz wrd lea tea hlp sci fod mda", outside: "nat adv spo saf bld mec ani" };
 
 // Follow-up questions (2 per topic). After the first 12, the game asks about
 // the topics it has found the most clues for. Naming a job here counts 0.6.

@@ -6,7 +6,7 @@
 const TOPIC_WORDS = {
   sci: "science scien scientist experiment lab labs chemi physic biolog microscope discover research fossil dinosaur dino volcano atom molecul germ bacteria dna gene cell magnet slime crystal math equation formula element hypothes measure earthquake mineral evolution energy telescope invent invention inventor study studying curious brain puzzle",
   tec: "computer coding code coder program programming app apps website web internet tech technolog robot robotic ai gadget tablet ipad laptop phone software hack hacker cyber electronic keyboard digital online virtual vr algorithm server scratch python javascript minecraft roblox server servers deploy database cloud debug debugging developer developers devops excel spreadsheet spreadsheets it",
-  bld: "build builder building construct construction engineer bridge tower skyscraper architect lego block blocks brick wood wooden hammer nail tool tools drill blueprint fort treehouse machine invent crane concrete wall roof electric electricity wire plumb weld cardboard design structure welding site sites plans drawings cad concrete scaffold",
+  bld: "build builder building construct construction engineer bridge tower skyscraper architect lego block blocks brick wood wooden hammer nail tool tools drill blueprint fort treehouse machine invent crane concrete wall roof electric electricity wire plumb weld cardboard design structure welding site sites plans drawings cad concrete scaffold wiring electrical",
   mec: "car cars truck trucks engine motor mechanic vehicle drive driver driving train trains tractor bike bicycle motorbike motorcycle wheel tire tyre fix fixing repair repairing wrench garage bus boat ship gear machine machines digger bulldozer kart go-kart fixed fixes forklift delivery deliver route routes",
   spc: "space rocket astronaut planet planets star stars galaxy moon mars sun universe orbit satellite nasa alien aliens telescope fly flying flight plane planes airplane aeroplane jet pilot sky cockpit helicopter astronomy",
   art: "art arts artist draw drawing drew paint painting painter sketch color colour colors design designer designing craft crafts crafty sculpt clay pottery fashion clothes dress dresses outfit style decorate decorating beautiful pretty creative crayon marker comic comics cartoon jewelry jewellery makeup hair nails sew sewing knit origami picture pictures knitting",
@@ -61,5 +61,6 @@ const ALIASES = {
   "cosmetology": "Hairstylist", "trucking school": "Truck Driver", "flight school": "Pilot", "dental school": "Dentist",
   "pharmacy school": "Pharmacist", "computer science": "Software Developer", "electrician apprenticeship": "Electrician",
   "plumbing apprenticeship": "Plumber", "carpentry": "Carpenter", "architecture school": "Architect", "journalism": "Journalist",
+  "wiring": "Electrician", "electrical": "Electrician", "electrician": "Electrician",
   "engineer": "Mechanical Engineer", "inventor": "Inventor", "magician": "Magician", "dancer": "Dancer",
 };

@@ -25,10 +25,14 @@
   const state = {
     asked: [],     // questions shown so far, in order
     texts: [],     // what the player typed for each
-    readings: [],  // Engine.readAnswer result for each
+    readings: [],  // Engine.readFor result for each
     i: 0,
     guesses: [],   // jobs ranked best first
     guessAt: 0,    // which guess is showing
+    clockSecs: 0,  // 0 = no clock
+    deadline: 0,   // when the clock runs out (ms)
+    timer: null,
+    timedOut: false,
     listLimit: PAGE,
   };
 
@@ -72,8 +76,9 @@
 
   function renderQuestion(feedback) {
     const q = state.asked[state.i];
-    $("qCount").textContent = `Question ${state.i + 1} of ${TOTAL_QUESTIONS}`;
-    $("qFill").style.width = `${(state.i / TOTAL_QUESTIONS) * 100}%`;
+    $("qCount").textContent = `Rung ${state.i + 1} of ${TOTAL_QUESTIONS}`;
+    $("ladder").innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, k) =>
+      `<span class="${k < state.i ? "done" : k === state.i ? "now" : ""}"></span>`).join("");
     $("qText").textContent = q.q;
     $("qBecause").hidden = !q.for;
     if (q.for) $("qBecause").innerHTML = `Because you wrote about <strong>${topicLabel(q.for)}</strong>`;
@@ -100,7 +105,7 @@
     const text = $("answer").value.trim();
     const changed = text !== (state.texts[state.i] || "");
     state.texts[state.i] = text;
-    state.readings[state.i] = Engine.readAnswer(text, q.q, q.named ?? (q.for ? 0.6 : 0.25));
+    state.readings[state.i] = Engine.readFor(q, text);
     // A changed answer can change which follow-ups come next, so drop the
     // follow-ups after it. The first 12 questions stay, since they never change.
     if (changed) {
@@ -114,14 +119,54 @@
     state.i += 1;
     if (!state.asked[state.i]) state.asked.push(nextQuestion());
     renderQuestion(feedback);
+    renderHunch();
+  }
+
+  // Think out loud: show the current best guess once there are a few clues.
+  function renderHunch() {
+    const { s } = Engine.tally(state.readings);
+    const clues = Object.values(s).reduce((x, y) => x + y, 0);
+    const box = $("hunch");
+    if (clues < 2) { box.hidden = true; return; }
+    const [first, second] = Engine.scoreJobs(prepared, state.readings, null);
+    const sure = first.score - second.score > 0.08;
+    box.hidden = false;
+    box.innerHTML = sure
+      ? `My hunch: <strong>${esc(first.name)}</strong>. Am I close?`
+      : `Hmm… <strong>${esc(first.name)}</strong> or <strong>${esc(second.name)}</strong>?`;
+  }
+
+  // ---------- Clock ----------
+  function startClock() {
+    clearInterval(state.timer);
+    $("clock").hidden = !state.clockSecs;
+    if (!state.clockSecs) return;
+    state.deadline = Date.now() + state.clockSecs * 1000;
+    tick();
+    state.timer = setInterval(tick, 250);
+  }
+
+  function tick() {
+    const left = Math.max(0, Math.ceil((state.deadline - Date.now()) / 1000));
+    $("clock").textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+    $("clock").classList.toggle("low", left <= 15);
+    if (left === 0) {
+      // Time's up: keep whatever is typed in the box, then guess.
+      const text = $("answer").value.trim();
+      if (text) state.readings[state.i] = Engine.readFor(state.asked[state.i], text);
+      state.timedOut = true;
+      finish();
+    }
   }
 
   function finish() {
+    clearInterval(state.timer);
     state.guesses = Engine.scoreJobs(prepared, state.readings, null);
     state.guessAt = 0;
     state.listLimit = PAGE;
     $("jobSearch").value = "";
     renderResults();
+    $("timeUp").hidden = !state.timedOut;
     show("results");
   }
 
@@ -233,8 +278,12 @@
     state.texts = [];
     state.readings = [];
     state.i = 0;
+    state.timedOut = false;
+    state.clockSecs = Number(document.querySelector('input[name="clock"]:checked').value);
+    $("hunch").hidden = true;
     show("quiz");
     renderQuestion();
+    startClock();
   });
   $("answerForm").addEventListener("submit", e => { e.preventDefault(); submit(); });
   $("answer").addEventListener("keydown", e => {

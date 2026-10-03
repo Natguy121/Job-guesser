@@ -6,97 +6,103 @@
 <title>Future Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Baloo+2:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bungee&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="bar">
-  <span class="logo">Future<span>Map</span></span>
-  <span class="bar-age" id="barAge"></span>
-</header>
+<canvas id="confetti" hidden></canvas>
 
-<main class="wrap">
+<main class="stage">
   <!-- START -->
   <section id="start" class="screen">
-    <p class="eyebrow">A job guessing game for grown-ups</p>
-    <h1>Climb the ladder. I'll guess your job.</h1>
-    <p class="lead">18 quick questions, one rung each. Inside or outside? Uniform? What's in your pockets? Type your answers, but don't say the name of your job! I'll share my hunch as we climb, and at the top I'll guess which of <strong id="jobTotal">580</strong> jobs you do.</p>
+    <div class="marquee">
+      <p class="eyebrow">The job guessing game</p>
+      <h1>Climb the ladder.<br><span class="hl">I'll guess your job.</span></h1>
+      <p class="lead">18 quick questions, one rung each. Type your answers, but never say the name of your job! My meter heats up as I get closer. At the top, I guess from <strong id="jobTotal">590</strong> jobs.</p>
+    </div>
 
     <fieldset class="clock-pick">
-      <legend class="h-small">Play against the clock?</legend>
-      <label><input type="radio" name="clock" value="120" checked> 2 minutes, like the street videos</label>
-      <label><input type="radio" name="clock" value="0"> No clock, take your time</label>
+      <legend>Play against the clock?</legend>
+      <label><input type="radio" name="clock" value="120" checked> <span>2 minutes, like the street videos</span></label>
+      <label><input type="radio" name="clock" value="0"> <span>No clock, take your time</span></label>
     </fieldset>
-
-    <h2 class="h-small">I look for clues in 20 areas</h2>
-    <ul class="topic-chips" id="topicChips"></ul>
 
     <button class="btn btn-go" id="startBtn" type="button">Step onto the ladder</button>
   </section>
 
   <!-- QUIZ -->
   <section id="quiz" class="screen" hidden>
-    <div class="ladder-head">
-      <span id="qCount" class="q-count">Rung 1 of 18</span>
-      <span class="clock" id="clock" hidden>2:00</span>
-    </div>
-    <div class="ladder" id="ladder" aria-hidden="true"></div>
-    <p class="because" id="qBecause" hidden></p>
-    <h2 id="qText" class="q-text"></h2>
-    <form class="answer-form" id="answerForm">
-      <label for="answer" class="sr-only">Your answer</label>
-      <textarea id="answer" rows="3" maxlength="400" autocomplete="off" spellcheck="true"></textarea>
-      <div class="quiz-nav">
-        <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
-        <span class="nav-right">
-          <button class="btn btn-quiet" id="skipBtn" type="button">Skip</button>
-          <button class="btn btn-go btn-next" id="nextBtn" type="submit">Next</button>
-        </span>
+    <div class="quiz-top">
+      <div class="quiz-top-left">
+        <span id="qCount" class="q-count">Rung 1 of 18</span>
+        <div class="ladder" id="ladder" aria-hidden="true"></div>
       </div>
-      <p class="key-hint">Press Enter to go on. Shift + Enter makes a new line.</p>
-    </form>
-    <p class="hunch" id="hunch" hidden></p>
-    <p class="clue-box" id="clueBox" hidden></p>
+      <div class="clock" id="clock" hidden>
+        <svg viewBox="0 0 80 80" aria-hidden="true">
+          <circle class="clock-track" cx="40" cy="40" r="34"></circle>
+          <circle class="clock-ring" id="clockRing" cx="40" cy="40" r="34"></circle>
+        </svg>
+        <span id="clockText" class="clock-text">2:00</span>
+      </div>
+    </div>
+
+    <div class="heat" id="heat" aria-live="polite">
+      <span class="heat-icon" id="heatIcon">🧊</span>
+      <div class="heat-track"><div class="heat-cover" id="heatCover"></div></div>
+      <span class="heat-label" id="heatLabel">Ice cold</span>
+    </div>
+
+    <p class="host" id="host" hidden></p>
+
+    <div class="marquee q-card" id="qCard">
+      <h2 id="qText" class="q-text"></h2>
+      <form class="answer-form" id="answerForm">
+        <label for="answer" class="sr-only">Your answer</label>
+        <textarea id="answer" rows="2" maxlength="400" autocomplete="off" spellcheck="true"></textarea>
+        <div class="quiz-nav">
+          <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
+          <span class="nav-right">
+            <button class="btn btn-quiet" id="skipBtn" type="button">Skip</button>
+            <button class="btn btn-go btn-next" id="nextBtn" type="submit">Next</button>
+          </span>
+        </div>
+      </form>
+    </div>
+    <p class="key-hint">Enter to answer · Shift + Enter for a new line</p>
+  </section>
+
+  <!-- DRUMROLL -->
+  <section id="drumroll" class="screen drumroll" hidden>
+    <p class="drum-text">Your job is…</p>
+    <p class="drum-sticks" aria-hidden="true">🥁</p>
   </section>
 
   <!-- RESULTS -->
   <section id="results" class="screen" hidden>
-    <div class="reveal">
-      <p class="eyebrow" id="timeUp" hidden>Time's up!</p>
-      <p class="eyebrow" id="guessCount">Guess 1</p>
-      <h1 id="guessName"></h1>
+    <div class="marquee reveal" id="reveal">
+      <p class="eyebrow time-up" id="timeUp" hidden>⏰ Time's up!</p>
+      <p class="eyebrow" id="guessCount">My guess is…</p>
+      <h1 id="guessName" class="guess-name"></h1>
       <p class="guess-desc" id="guessDesc"></p>
       <p class="guess-why" id="guessWhy"></p>
-      <p class="few-clues" id="fewClues" hidden>I only found a few clues, so this is a wild guess. Longer answers help!</p>
       <div class="guess-actions" id="guessAsk">
-        <span class="h-small">Did I get it?</span>
+        <span class="ask">Did I get it?</span>
         <button class="btn btn-go" id="yesBtn" type="button">Yes!</button>
-        <button class="btn" id="noBtn" type="button">No, guess again</button>
+        <button class="btn btn-ghost" id="noBtn" type="button">No, guess again</button>
       </div>
       <p class="guess-done" id="guessDone" hidden></p>
     </div>
 
-    <h2>My top guesses</h2>
-    <p class="muted">Each job lists the areas it needs, most important first. A ✓ means I found lots of clues for that area.</p>
-    <div class="job-grid" id="topJobs"></div>
+    <h2>My shortlist</h2>
+    <ol class="top-jobs" id="topJobs"></ol>
 
-    <h2>The clues I found</h2>
-    <p class="muted">Every clue word in your answers gave a point to an area. The words under each bar are the clues.</p>
-    <ol class="topic-rank" id="topicRank"></ol>
-
-    <h2>Browse every job</h2>
-    <p class="muted">Stumped me? Find your job here.</p>
-    <div class="filters">
-      <input type="search" id="jobSearch" placeholder="Search jobs, like 'nurse' or 'pilot'">
-      <select id="jobTopic" aria-label="Filter by area"></select>
-    </div>
+    <h2>Stumped me? Find your job</h2>
+    <input type="search" id="jobSearch" class="search" placeholder="Search jobs, like 'nurse' or 'pilot'">
     <p class="muted small" id="jobCount"></p>
     <ul class="job-list" id="allJobs"></ul>
     <button class="btn btn-quiet" id="moreJobs" type="button" hidden>Show more jobs</button>
 
-    <div class="res-actions">
-      <button class="btn btn-go" id="retakeBtn" type="button">Play again</button>
-    </div>
+    <button class="btn btn-go" id="retakeBtn" type="button">Play again</button>
   </section>
 </main>
 

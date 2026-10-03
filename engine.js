@@ -1,7 +1,9 @@
-// Future Map — reads typed answers and turns them into topic points and job guesses.
-// Pure functions only (no page code), so it can be tested on its own.
+// Future Map — reads typed answers and turns them into points for 50 hidden
+// areas, then into job guesses. Pure functions only (no page code), so it can
+// be tested on its own.
 const Engine = (function () {
-  const TOPIC_KEYS = Object.keys(TOPICS);
+  const TOPIC_KEYS = Object.keys(TOPIC_WORDS);
+  const COMMON = new Set(typeof COMMON_JOBS === "undefined" ? [] : COMMON_JOBS);
 
   // Lowercase, drop apostrophes ("don't" -> "dont"), split into words.
   function tokenize(text) {
@@ -41,10 +43,10 @@ const Engine = (function () {
   // Jobs: keywords from name + description, weighted so rarer words count more.
   function prepareJobs(jobs) {
     const list = jobs.map(([name, desc, tags, train, outlook]) => {
-      const topics = tags.split(" ").map(s => ({ t: s.slice(0, 3), w: Number(s.slice(3)) })).sort((a, b) => b.w - a.w);
+      const topics = tags.split(" ").map(s => s.match(/^([a-z]+)(\d)$/)).map(m => ({ t: m[1], w: Number(m[2]) })).sort((a, b) => b.w - a.w);
       const words = new Set(tokenize(name + " " + desc).map(norm).filter(w => w.length >= 4 && !STOPWORDS.has(w)));
       const names = name.split(/\s*[\/(]\s*/).map(n => tokenize(n.replace(")", "")).map(norm).join(" ")).filter(Boolean);
-      return { name, desc, train, outlook, topics, words, names };
+      return { name, desc, train, outlook, topics, words, names, common: COMMON.has(name) };
     });
     const df = new Map();
     list.forEach(j => j.words.forEach(w => df.set(w, (df.get(w) || 0) + 1)));
@@ -94,6 +96,9 @@ const Engine = (function () {
     // Fun questions ("If your job was a food…") count less and can ignore areas.
     if (q.ignore) q.ignore.split(" ").forEach(t => { delete r.topics[t]; delete r.clues[t]; });
     if (q.weight) Object.keys(r.topics).forEach(t => { r.topics[t] *= q.weight; });
+    // named: 0 means the answer is about someone else (like your boss), so it hints
+    // at your field but its words shouldn't match a particular job.
+    if (q.named === 0) r.words = [];
     const boost = list => list.split(" ").forEach(t => { r.topics[t] = Math.min(2, (r.topics[t] || 0) + 0.5); });
     if (q.kind === "yesno") {
       const first = tokens.find(w => YES.includes(w) || NO.includes(w));
@@ -169,10 +174,51 @@ const Engine = (function () {
       const deg = degree == null ? 1 : degree
         ? (j.train >= 4 ? 1.15 : j.train <= 1 ? 0.75 : 0.95)
         : (j.train >= 4 ? 0.7 : j.train <= 2 ? 1.1 : 1);
-      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod * deg;
+      // Common jobs are simply more likely: far more people are nurses than primatologists.
+      const prior = j.common ? 1.08 : 1;
+      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod * deg * prior;
       return { ...j, pct: Math.max(0, Math.min(99, Math.round(score * 100))), score, hits, mentioned: mention >= 0.5 };
     }).sort((a, b) => b.score - a.score || a.train - b.train || a.name.localeCompare(b.name));
   }
 
-  return { tokenize, readAnswer, readFor, tally, prepareJobs, scoreJobs, startYears, TOPIC_KEYS };
+  // Pick the next follow-up question. Early on (few clues) it asks about the
+  // strongest area. After that it asks about the area that best splits the
+  // current top guesses, so each answer rules some of them in or out.
+  function pickFollowup(prepared, asked, readings) {
+    const used = new Set(asked);
+    const left = FOLLOWUPS.filter(f => !used.has(f));
+    if (!left.length) return null;
+    const { s } = tally(readings);
+    const clues = Object.values(s).reduce((a, b) => a + b, 0);
+    if (clues < 2) {
+      const ranked = TOPIC_KEYS.slice().sort((a, b) => s[b] - s[a]);
+      return left.find(f => f.for === ranked.find(t => left.some(x => x.for === t))) || left[0];
+    }
+    const top = scoreJobs(prepared, readings, null).slice(0, 8);
+    const weights = top.map(j => j.score * j.score);
+    const total = weights.reduce((a, b) => a + b, 0) || 1;
+    let best = null, bestValue = -1;
+    left.forEach(f => {
+      const vals = top.map(j => (j.topics.find(x => x.t === f.for) || { w: 0 }).w);
+      const mean = vals.reduce((sum, v, i) => sum + v * weights[i], 0) / total;
+      const spread = vals.reduce((sum, v, i) => sum + weights[i] * (v - mean) ** 2, 0) / total;
+      // Small bonus for areas the leading guess needs, so the game also confirms its hunch.
+      const value = spread + 0.05 * vals[0];
+      if (value > bestValue) { bestValue = value; best = f; }
+    });
+    return best;
+  }
+
+  // How sure the game is right now, from 0 (no idea) to 1 (pretty sure).
+  // It needs plenty of clues (about 40 clue points to max out) AND a clear lead
+  // for the best guess over the next one. Tuned so it climbs gradually.
+  function closeness(results, readings) {
+    if (results.length < 2 || results[0].score <= 0) return 0;
+    const { s } = tally(readings);
+    const evidence = Object.values(s).reduce((a, b) => a + b, 0);
+    const lead = (results[0].score - results[1].score) / results[0].score;
+    return Math.min(1, evidence / 40) * (0.35 + 0.65 * Math.min(1, lead * 4));
+  }
+
+  return { tokenize, readAnswer, readFor, tally, prepareJobs, scoreJobs, pickFollowup, closeness, startYears, TOPIC_KEYS };
 })();

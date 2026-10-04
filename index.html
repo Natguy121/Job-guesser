@@ -19,14 +19,18 @@
     <div class="marquee">
       <p class="eyebrow">The job guessing game</p>
       <h1>Climb the ladder.<br><span class="hl">I'll guess your job.</span></h1>
-      <p class="lead">20 easy questions, one rung each. Answer in your own words, but never say the name of your job. Take your time: my meter warms up as I get closer, and at the top I guess from <strong id="jobTotal">1,000</strong> jobs.</p>
+      <p class="lead">Easy questions, one rung each. You choose how many. Answer in your own words, but never say the name of your job. Take your time: my meter warms up as I get closer, and at the top I guess from <strong id="jobTotal">1,000</strong> jobs.</p>
     </div>
 
-    <fieldset class="clock-pick">
-      <legend>Play against the clock?</legend>
-      <label><input type="radio" name="clock" value="0" checked> <span>No clock, take your time</span></label>
-      <label><input type="radio" name="clock" value="180"> <span>3-minute challenge</span></label>
-    </fieldset>
+    <div class="length-pick">
+      <label for="numQ" class="length-label">How many questions? <output id="numQOut" for="numQ">20</output></label>
+      <input type="range" id="numQ" min="5" max="35" step="1" value="20">
+      <div class="acc-meter" aria-hidden="true"><div class="acc-fill" id="accFill"></div></div>
+      <div class="acc-scale" aria-hidden="true"><span>Less accurate</span><span>More accurate</span></div>
+      <p class="acc-text" id="accText"></p>
+    </div>
+
+    <label class="timed"><input type="checkbox" id="timed"> <span id="timedLabel">Timed challenge</span></label>
 
     <button class="btn btn-go" id="startBtn" type="button">Step onto the ladder</button>
   </section>
@@ -35,7 +39,7 @@
   <section id="quiz" class="screen" hidden>
     <div class="quiz-top">
       <div class="quiz-top-left">
-        <span id="qCount" class="q-count">Rung 1 of 20</span>
+        <span id="qCount" class="q-count">Rung 1</span>
         <div class="ladder" id="ladder" aria-hidden="true"></div>
       </div>
       <div class="clock" id="clock" hidden>
@@ -109,6 +113,7 @@
 
 <script src="data.js"></script>
 <script src="jobs.js"></script>
+<script src="all-jobs.js"></script>
 <script src="words.js"></script>
 <script src="engine.js"></script>
 <script src="app.js"></script>

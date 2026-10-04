@@ -4,7 +4,19 @@
   const MAX_GUESSES = 10;
   const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Future jobs barely exist yet, so nobody has them today. Leave them out of guessing.
-  const prepared = Engine.prepareJobs(JOBS.filter(j => j[4] !== "f"));
+  // Hand-written jobs plus the big imported list of job titles (all-jobs.js).
+  const prepared = Engine.prepareJobs(Engine.allJobs(JOBS, typeof ALL_JOB_TITLES === "undefined" ? null : ALL_JOB_TITLES));
+
+  // Estimated accuracy for each game length: the share of the 29 test workers in
+  // tests/ (simple, sports, creators) whose first guess was right. Filled in between.
+  // Re-measure with: node tests/measure.js workers-simple --n 10
+  const ACCURACY = { 5: 0.59, 10: 0.76, 15: 0.76, 20: 0.76, 25: 0.79, 30: 0.79, 35: 0.79 };
+  function accuracyFor(n) {
+    const keys = Object.keys(ACCURACY).map(Number).sort((x, y) => x - y);
+    const lo = keys.filter(k => k <= n).pop(), hi = keys.find(k => k >= n);
+    if (lo === hi) return ACCURACY[lo];
+    return ACCURACY[lo] + (ACCURACY[hi] - ACCURACY[lo]) * (n - lo) / (hi - lo);
+  }
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -19,6 +31,8 @@
     guesses: [],   // jobs ranked best first
     guessAt: 0,    // which guess is showing
     listLimit: PAGE,
+    total: 20,     // how many questions this game has
+    fixed: [],     // the fixed questions for this game
     clockSecs: 0,  // 0 = no clock
     deadline: 0,
     timer: null,
@@ -65,12 +79,13 @@
 
   function renderQuestion(say) {
     const q = state.asked[state.i];
-    $("qCount").textContent = `Rung ${state.i + 1} of ${TOTAL_QUESTIONS}`;
-    $("ladder").innerHTML = Array.from({ length: TOTAL_QUESTIONS }, (_, k) =>
+    $("qCount").textContent = `Rung ${state.i + 1} of ${state.total}`;
+    $("ladder").style.gridTemplateColumns = `repeat(${state.total}, 1fr)`;
+    $("ladder").innerHTML = Array.from({ length: state.total }, (_, k) =>
       `<span class="${k < state.i ? "done" : k === state.i ? "now" : ""}"></span>`).join("");
     $("qText").textContent = q.q;
     $("backBtn").disabled = state.i === 0;
-    $("nextBtn").textContent = state.i === TOTAL_QUESTIONS - 1 ? "Guess my job!" : "Next";
+    $("nextBtn").textContent = state.i === state.total - 1 ? "Guess my job!" : "Next";
     const input = $("answer");
     input.value = state.texts[state.i] || "";
     input.placeholder = q.hint || "Type your answer here…";
@@ -88,7 +103,7 @@
 
   function nextQuestion() {
     const n = state.asked.length;
-    if (n < QUESTIONS.length) return QUESTIONS[n];
+    if (n < state.fixed.length) return state.fixed[n];
     return Engine.pickFollowup(prepared, state.asked, state.readings.slice(0, n));
   }
 
@@ -101,7 +116,7 @@
     // A changed answer can change which follow-ups come next, so drop the
     // follow-ups after it. The first 12 questions stay, since they never change.
     if (changed) {
-      const keep = Math.max(state.i + 1, QUESTIONS.length);
+      const keep = Math.max(state.i + 1, state.fixed.length);
       state.asked.length = Math.min(state.asked.length, keep);
       state.texts.length = Math.min(state.texts.length, keep);
       state.readings.length = Math.min(state.readings.length, keep);
@@ -109,7 +124,7 @@
     const before = state.heat;
     state.heat = Engine.closeness(Engine.scoreJobs(prepared, state.readings, null), state.readings);
     renderHeat();
-    if (state.i >= TOTAL_QUESTIONS - 1) return finish();
+    if (state.i >= state.total - 1) return finish();
     state.i += 1;
     if (!state.asked[state.i]) state.asked.push(nextQuestion());
     renderQuestion(reaction(before, state.heat, text));
@@ -170,7 +185,7 @@
     const why = cluesFor(guess);
     $("guessCount").textContent = done === "yes" ? "Nailed it!" : state.guessAt === 0 ? "My guess is…" : `Guess ${state.guessAt + 1}: is it…`;
     $("guessName").textContent = guess.name;
-    $("guessDesc").textContent = guess.desc;
+    $("guessDesc").textContent = describe(guess);
     $("guessWhy").innerHTML = why.length ? `What gave it away: <strong>${esc(why.join(", "))}</strong>` : "";
     $("guessAsk").hidden = !!done;
     $("guessDone").hidden = !done;
@@ -195,6 +210,12 @@
     renderAllJobs();
   }
 
+  // Imported titles have no description, so say which job they're like instead.
+  function describe(job) {
+    if (job.desc) return job.desc;
+    return job.similar ? `A job a lot like ${job.similar}` : "From the big list of job titles";
+  }
+
   function trainingText(job) {
     return job.train === 0 ? "Often no degree needed" : `About ${job.train} year${job.train === 1 ? "" : "s"} of training`;
   }
@@ -210,7 +231,7 @@
     $("allJobs").innerHTML = shown.map(j => `<li>
         <span class="jl-name">${esc(j.name)}</span>
         <span class="jl-pct">${j.pct}%</span>
-        <span class="jl-desc">${esc(j.desc)} · ${trainingText(j)}</span>
+        <span class="jl-desc">${esc(describe(j))} · ${trainingText(j)}</span>
       </li>`).join("") || `<li class="muted">No jobs match that search. Try a different word.</li>`;
   }
 
@@ -244,15 +265,19 @@
 
   // ---------- Events ----------
   $("startBtn").addEventListener("click", () => {
-    state.asked = [QUESTIONS[0]];
+    state.asked = [];
     state.texts = [];
     state.readings = [];
     state.i = 0;
     state.heat = 0;
     state.timedOut = false;
-    state.clockSecs = Number(document.querySelector('input[name="clock"]:checked').value);
+    state.total = Number($("numQ").value);
+    state.fixed = Engine.planFixed(state.total);
+    // The timed challenge gives about 9 seconds a question.
+    state.clockSecs = $("timed").checked ? state.total * 9 : 0;
     renderHeat();
     show("quiz");
+    state.asked.push(state.fixed[0]);
     renderQuestion("Welcome! Take your time. First question…");
     startClock();
   });
@@ -273,6 +298,19 @@
   $("jobSearch").addEventListener("input", () => { state.listLimit = PAGE; renderAllJobs(); });
   $("moreJobs").addEventListener("click", () => { state.listLimit += PAGE; renderAllJobs(); });
   $("retakeBtn").addEventListener("click", () => show("start"));
+
+  // Question-count slider: 5 to 35 questions, with an accuracy meter.
+  function renderLength() {
+    const n = Number($("numQ").value);
+    const acc = accuracyFor(n);
+    $("numQOut").textContent = n;
+    $("accFill").style.width = `${Math.round(acc * 100)}%`;
+    $("accText").textContent = `${n} questions: about ${Math.round(acc * 10)} in 10 games guessed right first time` +
+      (n <= 8 ? ". Quick, but it's a long shot!" : n >= 30 ? ". Thorough, but it takes a while." : ".");
+    $("timedLabel").textContent = `Timed challenge (${Math.floor(n * 9 / 60)}:${String(n * 9 % 60).padStart(2, "0")})`;
+  }
+  $("numQ").addEventListener("input", renderLength);
+  renderLength();
 
   $("jobTotal").textContent = prepared.list.length.toLocaleString("en-US");
 })();

@@ -63,19 +63,29 @@ const Engine = (function () {
 
   // Jobs: keywords from name + description, weighted so rarer words count more.
   function prepareJobs(jobs) {
-    const list = jobs.map(([name, desc, tags, train, outlook]) => {
+    const list = jobs.map(([name, desc, tags, train, outlook, similar]) => {
+      // Imported jobs (from the big job-title list) have no description, just a
+      // closest hand-written job they were tagged from.
+      const imported = similar !== undefined;
       const topics = tags.split(" ").map(s => s.match(/^([a-z]+)(\d)$/)).map(m => ({ t: m[1], w: Number(m[2]) })).sort((a, b) => b.w - a.w);
       const words = new Set(tokenize(name + " " + desc).filter(w => w.length >= 3 && !STOPWORDS.has(w) && !STOPWORDS.has(norm(w))).map(stem));
       const families = familiesIn(tokenize(name + " " + desc));
       const names = name.split(/\s*[\/(]\s*/).map(n => tokenize(n.replace(")", "")).map(norm).join(" ")).filter(Boolean);
-      return { name, desc, train, outlook, topics, words, names, families, common: COMMON.has(name) };
+      return { name, desc, train, outlook, topics, words, names, families, imported, similar, common: COMMON.has(name) };
     });
+    // How rare a word is, judged on the hand-written jobs only, so thousands of
+    // imported titles sharing "pipe" or "manager" don't water down the clues.
     const df = new Map();
-    list.forEach(j => j.words.forEach(w => df.set(w, (df.get(w) || 0) + 1)));
-    list.forEach(j => { j.weights = new Map([...j.words].map(w => [w, 1 / Math.log2(1 + df.get(w))])); });
+    list.filter(j => !j.imported).forEach(j => j.words.forEach(w => df.set(w, (df.get(w) || 0) + 1)));
+    list.forEach(j => { j.weights = new Map([...j.words].map(w => [w, 1 / Math.log2(1 + (df.get(w) || 1))])); });
     const byName = new Map(list.map(j => [j.name, j]));
     const aliases = Object.entries(ALIASES).map(([k, v]) => [tokenize(k).map(norm).join(" "), byName.get(v)]).filter(([, j]) => j);
-    return { list, aliases };
+    // Phrase lookup for spotting job names in answers: "vet" -> Veterinarian, "zumba instructor" -> Zumba Instructor.
+    const phrases = new Map();
+    const addPhrase = (p, j) => { if (!phrases.has(p)) phrases.set(p, []); phrases.get(p).push(j); };
+    list.forEach(j => j.names.forEach(p => addPhrase(p, j)));
+    aliases.forEach(([p, j]) => addPhrase(p, j));
+    return { list, aliases, phrases };
   }
 
   // Read one answer. Question words count half, since kids often repeat them.
@@ -160,24 +170,31 @@ const Engine = (function () {
     const found = new Map();
     readings.forEach(r => {
       if (!r) return;
-      const text = " " + r.tokens.join(" ") + " ";
-      const check = (phrase, job) => {
-        let at = text.indexOf(" " + phrase + " ");
-        while (at !== -1) {
-          const before = text.slice(0, at).trim().split(" ").filter(Boolean);
-          const neg = before.slice(-3).some(w => NEGATORS.includes(w));
+      const toks = r.tokens;
+      for (let i = 0; i < toks.length; i++) {
+        let phrase = "";
+        for (let len = 1; len <= 6 && i + len <= toks.length; len++) {
+          phrase = len === 1 ? toks[i] : phrase + " " + toks[i + len - 1];
+          const jobs = prepared.phrases.get(phrase);
+          if (!jobs) continue;
+          const neg = toks.slice(Math.max(0, i - 3), i).some(w => NEGATORS.includes(w));
           const v = neg ? -r.nameWeight : r.nameWeight;
-          found.set(job.name, neg ? Math.min(found.get(job.name) || 0, v) : Math.max(found.get(job.name) || 0, v));
-          at = text.indexOf(" " + phrase + " ", at + 1);
+          jobs.forEach(job => found.set(job.name, neg ? Math.min(found.get(job.name) || 0, v) : Math.max(found.get(job.name) || 0, v)));
         }
-      };
-      prepared.list.forEach(j => j.names.forEach(p => check(p, j)));
-      prepared.aliases.forEach(([p, j]) => check(p, j));
+      }
     });
     return found;
   }
 
   const SATURATE = 4;
+  const IMPORTED_PRIOR = 0.8;
+
+  // The fixed questions to ask in a game of n questions. Short games use the
+  // most telling ones first; long games get all 12 and then follow-ups.
+  const FIXED_ORDER = [3, 11, 5, 4, 0, 1, 2, 9, 10, 6, 7, 8];
+  function planFixed(n) {
+    return FIXED_ORDER.slice(0, Math.min(n, QUESTIONS.length)).sort((a, b) => a - b).map(i => QUESTIONS[i]);
+  }
 
   function startYears(job, age) { return Math.max(0, 18 + job.train - age); }
 
@@ -209,7 +226,9 @@ const Engine = (function () {
         ? (j.train >= 4 ? 1.15 : j.train <= 1 ? 0.75 : 0.95)
         : (j.train >= 4 ? 0.7 : j.train <= 2 ? 1.1 : 1);
       // Common jobs are simply more likely: far more people are nurses than primatologists.
-      const prior = j.common ? 1.08 : 1;
+      // Imported titles lose close calls to hand-written jobs, so odd variants
+      // ("1st Pressman On Web Press") only win when the answers point right at them.
+      const prior = j.common ? 1.08 : j.imported ? IMPORTED_PRIOR : 1;
       // Mentioned a sport? Jobs in that sport move up; jobs in other sports move down.
       let fam = 1;
       if (sports.size && j.families.size) fam = [...j.families].some(f => sports.has(f)) ? 1.2 : 0.6;
@@ -257,5 +276,18 @@ const Engine = (function () {
     return Math.min(1, evidence / 26) * (0.35 + 0.65 * Math.min(1, lead * 6));
   }
 
-  return { tokenize, readAnswer, readFor, tally, prepareJobs, scoreJobs, pickFollowup, closeness, startYears, TOPIC_KEYS };
+  // Combine the hand-written jobs with the imported job titles (all-jobs.js).
+  // Future jobs are left out, since nobody has them yet.
+  function allJobs(jobs, titles) {
+    const real = jobs.filter(j => j[4] !== "f");
+    if (!titles) return real;
+    const imported = titles.split("\n").map(line => {
+      const [name, tags, train, sim] = line.split("|");
+      const similar = +sim >= 0 && real[+sim] ? real[+sim][0] : null;
+      return [name, "", tags, +train, "s", similar];
+    });
+    return real.concat(imported);
+  }
+
+  return { allJobs, tokenize, stem, topicsFor, readAnswer, readFor, tally, prepareJobs, scoreJobs, pickFollowup, closeness, planFixed, startYears, TOPIC_KEYS };
 })();

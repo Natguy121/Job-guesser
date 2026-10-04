@@ -83,12 +83,24 @@ p { margin: 0; }
 }
 .clock-pick input:checked + span { background: var(--purple); border-color: var(--purple); color: #fff; }
 
+/* Question-count slider and accuracy meter */
+.length-pick { background: var(--card); border: 2px solid var(--line); border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+.length-label { font: 600 1.15rem/1.2 var(--display); display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.length-label output { font: 700 2rem/1 var(--display); color: var(--purple); font-variant-numeric: tabular-nums; }
+#numQ { width: 100%; accent-color: var(--purple); height: 28px; cursor: pointer; }
+.acc-meter { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.acc-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--red), var(--orange) 30%, var(--yellow) 50%, var(--green) 80%); background-size: 100% 100%; transition: width .3s; }
+.acc-scale { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); font-weight: 700; }
+.acc-text { font-weight: 700; }
+.timed { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; cursor: pointer; align-self: flex-start; }
+.timed input { width: 20px; height: 20px; accent-color: var(--purple); }
+
 /* Quiz header: ladder and clock */
 .quiz-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .quiz-top-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .q-count { font: 600 1rem/1 var(--display); color: var(--muted); }
 /* The ladder: each finished rung fills in with the next rainbow colour. */
-.ladder { display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; }
+.ladder { display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; } /* columns set per game in app.js */
 .ladder span { height: 14px; border-radius: 4px; background: var(--line); transition: background .4s; }
 .ladder span.now { background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); }
 .ladder span.done:nth-child(6n + 1) { background: var(--red); }

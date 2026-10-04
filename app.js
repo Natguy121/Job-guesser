@@ -306,11 +306,13 @@
     const n = Number($("numQ").value);
     const acc = accuracyFor(n);
     $("numQOut").textContent = n;
-    // The bar runs from nearly empty at 5 questions to full at 35, so you can see the
-    // gain; the sentence below gives the actual estimate.
+    // The bar climbs steadily from nearly empty at 5 questions to full at 35: half
+    // from the measured accuracy, half from how thorough the game is. The sentence
+    // below gives the actual estimate.
     const lo = ACCURACY[5], hi = ACCURACY[35];
-    $("accFill").style.width = `${Math.round(8 + 92 * (acc - lo) / (hi - lo))}%`;
-    $("accText").textContent = `${n} questions: about ${Math.round(acc * 10)} in 10 games guessed right first time` +
+    const fill = 0.5 * (acc - lo) / (hi - lo) + 0.5 * (n - 5) / 30;
+    $("accFill").style.width = `${Math.round(8 + 92 * fill)}%`;
+    $("accText").textContent = `${n} questions: right on the first guess in about ${Math.round(acc * 100)}% of games` +
       (n <= 8 ? ". Quick, but it's a long shot!" : n >= 30 ? ". Thorough, but it takes a while." : ".");
     $("timedLabel").textContent = `Timed challenge (${Math.floor(n * 9 / 60)}:${String(n * 9 % 60).padStart(2, "0")})`;
   }

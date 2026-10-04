@@ -84,4 +84,4 @@ const FOLLOWUPS = [
   { for: "cook", q: "How do food or drinks come into your job?" },
 ];
 
-const TOTAL_QUESTIONS = 18;
+const TOTAL_QUESTIONS = 20;

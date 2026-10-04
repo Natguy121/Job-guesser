@@ -18,13 +18,13 @@
     <div class="marquee">
       <p class="eyebrow">The job guessing game</p>
       <h1>Climb the ladder.<br><span class="hl">I'll guess your job.</span></h1>
-      <p class="lead">18 quick questions, one rung each. Type your answers, but never say the name of your job! My meter heats up as I get closer. At the top, I guess from <strong id="jobTotal">1,000</strong> jobs.</p>
+      <p class="lead">20 easy questions, one rung each. Answer in your own words, but never say the name of your job. Take your time: my meter warms up as I get closer, and at the top I guess from <strong id="jobTotal">1,000</strong> jobs.</p>
     </div>
 
     <fieldset class="clock-pick">
       <legend>Play against the clock?</legend>
-      <label><input type="radio" name="clock" value="120" checked> <span>2 minutes, like the street videos</span></label>
-      <label><input type="radio" name="clock" value="0"> <span>No clock, take your time</span></label>
+      <label><input type="radio" name="clock" value="0" checked> <span>No clock, take your time</span></label>
+      <label><input type="radio" name="clock" value="180"> <span>3-minute challenge</span></label>
     </fieldset>
 
     <button class="btn btn-go" id="startBtn" type="button">Step onto the ladder</button>
@@ -34,7 +34,7 @@
   <section id="quiz" class="screen" hidden>
     <div class="quiz-top">
       <div class="quiz-top-left">
-        <span id="qCount" class="q-count">Rung 1 of 18</span>
+        <span id="qCount" class="q-count">Rung 1 of 20</span>
         <div class="ladder" id="ladder" aria-hidden="true"></div>
       </div>
       <div class="clock" id="clock" hidden>
@@ -42,7 +42,7 @@
           <circle class="clock-track" cx="40" cy="40" r="34"></circle>
           <circle class="clock-ring" id="clockRing" cx="40" cy="40" r="34"></circle>
         </svg>
-        <span id="clockText" class="clock-text">2:00</span>
+        <span id="clockText" class="clock-text">3:00</span>
       </div>
     </div>
 

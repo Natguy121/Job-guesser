@@ -68,7 +68,7 @@ const TOPIC_WORDS = {
   pets: "pet pets dog dogs puppy puppies cat cats kitten rabbit rabbits hamster vet veterinarian veterinary groom grooming neuter vaccine vaccines leash",
   wild: "animal animals zoo wildlife wild lion lions tiger tigers elephant elephants monkey monkeys giraffe giraffes bird birds fish dolphin whale shark penguin enclosure enclosures enrichment marine aquarium horse horses cow cows chicken chickens sheep pony bunny bear bears reptile snake lizard turtle frog insect insects butterfly bee bees hive hives pig panda wolf fox deer",
   // Sport and fitness
-  sport: "sport sports soccer football basketball baseball tennis hockey golf athlete athletic match matches score goal goals league championship tournament olympic race racing swim swimming swimmer ball skate skating skateboard ski skiing karate taekwondo martial boxing olympics medal champion volleyball cycling fast parkour freerun freerunning freerunner vault vaulting tactics squad transfer transfers stadium pitch striker referee",
+  sport: "sport sports soccer football basketball baseball tennis hockey golf athlete athletic match matches score goal goals league championship tournament olympic race racing swim swimming swimmer ball skate skating skateboard ski skiing karate taekwondo martial boxing olympics medal champion volleyball cycling fast parkour freerun freerunning freerunner vault vaulting tactics squad transfer transfers stadium pitch striker referee basketball nba wnba hoop hoops dunk dunks court rebound rebounds dribble nfl touchdown touchdowns quarterback gridiron endzone baseball mlb pitcher pitching homerun innings diamond bat batting hockey nhl puck pucks rink cricket wicket wickets bowler bowling batsman innings rugby scrum scrums tackle tackles tennis serve serves racket racquet wimbledon golf golfer putt putting swing fairway caddie boxing boxer ring punch punches gloves knockout volleyball spike spikes athletics sprint sprints sprinter sprinting hurdles javelin motorsport formula grand prix racetrack pitstop",
   fit: "fitness fit gym workout workouts exercise weights cardio reps squat strength yoga protein running run runner gymnastic strong",
   // Travel and adventure
   travel: "travel traveling travelling trip trips tour tourist tourists hotel passport abroad world cruise vacation culture",
@@ -118,4 +118,23 @@ const ALIASES = {
   "estate agent": "Real Estate Agent", "gp": "General Practitioner", "family doctor": "General Practitioner", "binman": "Refuse Collector",
   "garbage man": "Refuse Collector", "postman": "Mail Carrier", "postwoman": "Mail Carrier", "lollipop lady": "School Crossing Guard",
   "engineer": "Mechanical Engineer", "inventor": "Inventor", "magician": "Magician", "dancer": "Dancer",
+};
+
+// Sports families. When a player mentions a sport, jobs in that sport move up
+// and jobs in other sports move down, the way a person would narrow it down.
+const SPORT_FAMILIES = {
+  basketball: "basketball nba wnba hoop hoops dunk dunks streetball",
+  football: "football soccer premier goalkeeper goalkeeping",
+  amfootball: "nfl touchdown touchdowns quarterback gridiron american",
+  baseball: "baseball mlb pitcher pitching homerun",
+  hockey: "hockey nhl puck pucks rink",
+  cricket: "cricket wicket wickets bowler batsman",
+  rugby: "rugby scrum scrums",
+  tennis: "tennis wimbledon racket racquet deuce",
+  golf: "golf golfer golfers putt putting fairway caddie",
+  boxing: "boxing boxer boxers knockout",
+  volleyball: "volleyball",
+  athletics: "athletics sprint sprinter sprints hurdles javelin marathon",
+  motorsport: "motorsport formula racing racetrack pitstop",
+  swimming: "swim swimming swimmer swimmers",
 };

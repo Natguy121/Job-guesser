@@ -48,12 +48,12 @@
 
   // A host-style reaction to the last answer, based on how much the heat moved.
   function reaction(before, after, text) {
-    if (!text) return pickOne(["Skipping? Bold move.", "Fine, keep your secrets!", "No clue there. Next!"]);
+    if (!text) return pickOne(["No problem, let's keep going.", "That's okay, next one!", "Skipping is fine."]);
     const jump = after - before;
     if (after >= 0.9) return pickOne(["Okay, I'm pretty sure now…", "Don't say another word. Well, keep going.", "I can feel it!"]);
     if (jump > 0.12) return pickOne(["Ooh, now we're talking!", "That's a big clue!", "Oh! Interesting…", "That narrows it down a lot."]);
     if (jump > 0.03) return pickOne(["Getting warmer…", "Hmm, that helps.", "Okay, okay…", "I see where this is going."]);
-    if (jump < -0.05) return pickOne(["Wait, that throws me off!", "Plot twist!", "Hmm, not what I expected."]);
+    if (jump < -0.05) return pickOne(["Ooh, that surprises me!", "Interesting twist…", "Hmm, not what I expected."]);
     return pickOne(["Hmm… tell me more.", "That could be lots of jobs.", "Keep going…", "Tricky one!"]);
   }
 
@@ -150,7 +150,7 @@
     renderResults();
     if (REDUCED) return show("results");
     show("drumroll");
-    setTimeout(() => show("results"), 2200);
+    setTimeout(() => show("results"), 1800);
   }
 
   // The player's own words that pointed to this job.
@@ -219,7 +219,7 @@
     const w = (canvas.width = window.innerWidth);
     const h = (canvas.height = window.innerHeight);
     const colors = ["#FFC23D", "#FF5A36", "#49B8FF", "#B48CFF", "#5BE3A0"];
-    const bits = Array.from({ length: 160 }, () => ({
+    const bits = Array.from({ length: 90 }, () => ({
       x: w / 2 + (Math.random() - 0.5) * w * 0.3, y: h * 0.35,
       vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
       r: Math.random() * 6 + 4, spin: Math.random() * 6, c: pickOne(colors),
@@ -234,7 +234,7 @@
         ctx.fillStyle = b.c; ctx.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2);
         ctx.restore();
       });
-      if (++frame < 150) requestAnimationFrame(draw);
+      if (++frame < 120) requestAnimationFrame(draw);
       else { ctx.clearRect(0, 0, w, h); canvas.hidden = true; }
     })();
   }
@@ -250,7 +250,7 @@
     state.clockSecs = Number(document.querySelector('input[name="clock"]:checked').value);
     renderHeat();
     show("quiz");
-    renderQuestion("Step on up! First question…");
+    renderQuestion("Welcome! Take your time. First question…");
     startClock();
   });
   $("answerForm").addEventListener("submit", e => { e.preventDefault(); submit(); });

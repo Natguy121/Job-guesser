@@ -17,6 +17,27 @@ const Engine = (function () {
     return word;
   }
 
+  // Stronger word stem for matching job names and descriptions:
+  // "coaching", "coached" and "coach" all match, as do "own" and "owner".
+  function stem(word) {
+    let w = norm(word);
+    for (const suf of ["ing", "ers", "er", "ed", "es", "e"]) {
+      if (w.endsWith(suf) && w.length - suf.length >= 3) { w = w.slice(0, -suf.length); break; }
+    }
+    return w;
+  }
+
+  // Sport families: word -> family name.
+  const FAMILY_OF = new Map();
+  if (typeof SPORT_FAMILIES !== "undefined") {
+    Object.entries(SPORT_FAMILIES).forEach(([fam, words]) => words.split(" ").forEach(w => FAMILY_OF.set(w, fam)));
+  }
+  function familiesIn(tokens) {
+    const fams = new Set(tokens.map(t => FAMILY_OF.get(t)).filter(Boolean));
+    if (fams.has("amfootball")) fams.delete("football");  // "american football" is its own sport
+    return fams;
+  }
+
   // Build a lookup of clue words -> topics.
   const exact = new Map();   // short entries: "dog" -> [ani]
   const prefixes = [];       // long entries: ["anima", ani]
@@ -44,9 +65,10 @@ const Engine = (function () {
   function prepareJobs(jobs) {
     const list = jobs.map(([name, desc, tags, train, outlook]) => {
       const topics = tags.split(" ").map(s => s.match(/^([a-z]+)(\d)$/)).map(m => ({ t: m[1], w: Number(m[2]) })).sort((a, b) => b.w - a.w);
-      const words = new Set(tokenize(name + " " + desc).map(norm).filter(w => w.length >= 4 && !STOPWORDS.has(w)));
+      const words = new Set(tokenize(name + " " + desc).filter(w => w.length >= 3 && !STOPWORDS.has(w) && !STOPWORDS.has(norm(w))).map(stem));
+      const families = familiesIn(tokenize(name + " " + desc));
       const names = name.split(/\s*[\/(]\s*/).map(n => tokenize(n.replace(")", "")).map(norm).join(" ")).filter(Boolean);
-      return { name, desc, train, outlook, topics, words, names, common: COMMON.has(name) };
+      return { name, desc, train, outlook, topics, words, names, families, common: COMMON.has(name) };
     });
     const df = new Map();
     list.forEach(j => j.words.forEach(w => df.set(w, (df.get(w) || 0) + 1)));
@@ -68,7 +90,7 @@ const Engine = (function () {
     tokens.forEach((tok, i) => {
       const neg = negatedAt(tokens, i);
       const n = norm(tok);
-      if (!neg && n.length >= 4 && !STOPWORDS.has(n)) words.push(n);
+      if (!neg && tok.length >= 3 && !STOPWORDS.has(tok) && !STOPWORDS.has(n)) words.push(stem(tok));
       topicsFor(tok).forEach(t => {
         const v = (echo.has(tok) ? 0.5 : 1) * (neg ? -1 : 1);
         topics[t] = (topics[t] || 0) + v;
@@ -77,7 +99,8 @@ const Engine = (function () {
     });
     // One answer can give a topic at most 2 points (or -1), so one long answer can't take over.
     Object.keys(topics).forEach(t => { topics[t] = Math.max(-1, Math.min(2, topics[t])); });
-    return { tokens: tokens.map(norm), topics, clues, words, nameWeight };
+    const families = [...familiesIn(tokens.filter((t, i) => !negatedAt(tokens, i)))];
+    return { tokens: tokens.map(norm), topics, clues, words, families, nameWeight };
   }
 
   const YES = "yes yeah yep yup ya yea sure definitely absolutely always usually mostly correct".split(" ");
@@ -154,6 +177,8 @@ const Engine = (function () {
     return found;
   }
 
+  const SATURATE = 4;
+
   function startYears(job, age) { return Math.max(0, 18 + job.train - age); }
 
   // Score every job. Topic fit counts most; exact words from the job's own
@@ -164,11 +189,15 @@ const Engine = (function () {
     const named = mentions(readings, prepared);
     const said = new Set(readings.flatMap(r => (r ? r.words : [])));
     const degree = readings.reduce((d, r) => (r && r.degree != null ? r.degree : d), null);
+    const sports = new Set(readings.flatMap(r => (r && r.families) || []));
     return prepared.list.map(j => {
       let got = 0, max = 0;
-      j.topics.forEach(({ t, w }) => { got += w * s[t]; max += w * best; });
-      // Jobs tagged with few topics would fit too easily, so pad them a little.
-      max += Math.max(0, 5 - j.topics.reduce((sum, x) => sum + x.w, 0)) * 0.5 * best;
+      // Each area counts as fully confirmed after SATURATE clue points, so one huge
+      // area can't drown out the smaller ones that tell similar jobs apart.
+      const strength = t => Math.min(1, s[t] / Math.min(SATURATE, best));
+      j.topics.forEach(({ t, w }) => { got += w * strength(t); max += w; });
+      // Jobs tagged with few areas would fit too easily, so pad them a little.
+      max += Math.max(0, 5 - j.topics.reduce((sum, x) => sum + x.w, 0)) * 0.5;
       const fit = max ? got / max : 0;
       const hits = [...j.words].filter(w => said.has(w));
       const direct = Math.min(1, hits.reduce((sum, w) => sum + j.weights.get(w), 0) / 2.5);
@@ -181,7 +210,10 @@ const Engine = (function () {
         : (j.train >= 4 ? 0.7 : j.train <= 2 ? 1.1 : 1);
       // Common jobs are simply more likely: far more people are nurses than primatologists.
       const prior = j.common ? 1.08 : 1;
-      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod * deg * prior;
+      // Mentioned a sport? Jobs in that sport move up; jobs in other sports move down.
+      let fam = 1;
+      if (sports.size && j.families.size) fam = [...j.families].some(f => sports.has(f)) ? 1.2 : 0.6;
+      const score = (0.6 * fit + 0.35 * direct + 0.45 * mention) * mod * deg * prior * fam;
       return { ...j, pct: Math.max(0, Math.min(99, Math.round(score * 100))), score, hits, mentioned: mention >= 0.5 };
     }).sort((a, b) => b.score - a.score || a.train - b.train || a.name.localeCompare(b.name));
   }
@@ -215,14 +247,14 @@ const Engine = (function () {
   }
 
   // How sure the game is right now, from 0 (no idea) to 1 (pretty sure).
-  // It needs plenty of clues (about 40 clue points to max out) AND a clear lead
+  // It needs plenty of clues (about 26 clue points to max out) AND a clear lead
   // for the best guess over the next one. Tuned so it climbs gradually.
   function closeness(results, readings) {
     if (results.length < 2 || results[0].score <= 0) return 0;
     const { s } = tally(readings);
     const evidence = Object.values(s).reduce((a, b) => a + b, 0);
     const lead = (results[0].score - results[1].score) / results[0].score;
-    return Math.min(1, evidence / 40) * (0.35 + 0.65 * Math.min(1, lead * 4));
+    return Math.min(1, evidence / 26) * (0.35 + 0.65 * Math.min(1, lead * 6));
   }
 
   return { tokenize, readAnswer, readFor, tally, prepareJobs, scoreJobs, pickFollowup, closeness, startYears, TOPIC_KEYS };

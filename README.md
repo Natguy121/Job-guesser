@@ -5,7 +5,7 @@ A job guessing game for grown-ups. The player climbs a ladder of 20 easy questio
 ## How it works
 
 1. **20 short, plain questions, one rung of a ladder each.** Anyone in any job can answer them, wherever they are.
-   - Relaxed by default, with soft lights, gentle transitions and no clock. There's an optional 3-minute challenge; when it runs out, the game guesses with what it has.
+   - A bright, flat rainbow look (rainbow stripes, a ladder that fills in rainbow colours, pastel host bubbles), relaxed by default with gentle transitions and no clock. There's an optional 3-minute challenge; when it runs out, the game guesses with what it has.
    - The first 12 are the same for everyone: where you work, what you wear, how you got the job, what you do most of the day, who you work with, your tools, the best and hardest parts, your boss, a word people at your job use, what people ask you, and one big clue.
    - The last 8 are follow-ups ("What do you build or fix?", "How does money come into your job?"). Each one is picked because it best splits the game's current top guesses.
 2. **50 hidden areas.** The game sorts clues into 50 areas (doctors, nurses, dentists, police, fire, military, coding, IT support, and so on), but never shows them. The player only sees a **heat meter** (Ice cold → Chilly → Warmer → Hot → On fire! → I think I know!) that rises with the amount of evidence and how far the best guess is ahead, plus a host-style reaction after each answer.
@@ -18,7 +18,7 @@ A job guessing game for grown-ups. The player climbs a ladder of 20 easy questio
    - Mentioning a sport ("basketball", "puck", "wicket"…) moves that sport's jobs up and other sports' jobs down.
    - Each area counts as fully confirmed after a few clues, so a strong side clue (rules for an umpire, coaching for a coach) can tell similar jobs apart.
 4. **The guess.** Every job gets a score from how well the player's areas fit the job's areas (weighted 3/2/1), words that match the job's own description, and job names or training phrases. Common jobs get a small boost, because a random player is far more likely to be a nurse than a primatologist. After a drumroll the game asks "Is it…?" and on "No" tries its next guess, up to 10. Confetti when it's right.
-5. **1,089 real jobs** (`jobs.js`), from nurses and plumbers to parkour athletes and ice sculptors. Basketball, football, American football, baseball, ice hockey, cricket, rugby, tennis, golf, boxing, volleyball, athletics and motorsport each have players, coaches, scouts, owners, agents, referees or umpires, commentators and managers. The file also has 42 invented future jobs (like Space Farmer) that are left out of guessing.
+5. **1,152 real jobs** (`jobs.js`), from nurses and plumbers to parkour athletes and ice sculptors, plus gaming and creator jobs (Twitch streamer, gaming YouTuber, Fortnite and Valorant pros, esports analyst, beauty influencer, VTuber, cosplayer…). Basketball, football, American football, baseball, ice hockey, cricket, rugby, tennis, golf, boxing, volleyball, athletics and motorsport each have players, coaches, scouts, owners, agents, referees or umpires, commentators and managers. The file also has 42 invented future jobs (like Space Farmer) that are left out of guessing.
 
 ## Accuracy
 
@@ -30,6 +30,7 @@ node tests/measure.js workers-unseen-2   # 15 workers written after tuning
 node tests/measure.js workers-new-jobs   # 5 workers with newer jobs (football manager, parkour…)
 node tests/measure.js workers-simple     # 15 workers answering the current questions
 node tests/measure.js workers-sports     # 8 sports workers (coaches, owners, umpires…)
+node tests/measure.js workers-creators   # 6 gaming and creator workers
 node tests/measure.js workers -v         # list the misses
 ```
 

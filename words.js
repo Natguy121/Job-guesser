@@ -32,9 +32,9 @@ const TOPIC_WORDS = {
   music: "rap rapper hiphop music musician musical band bands guitar piano drum drums violin instrument concert concerts song songs sing singing singer gig gigs record recording studio album choir karaoke",
   stage: "act actor actress acting theater theatre stage perform performer performing dance dancer dancing ballet comedy comedian circus magic magician audience audiences funny joke jokes laugh",
   // Media
-  film: "video videos film films filming movie movies camera cameras photo photos photograph photographer photography lens lenses footage shoot shoots portrait portraits wedding weddings lightroom aperture youtube youtuber vlog vlogger tv television channel stream streamer streaming twitch edit anime animation animate",
-  games: "game games gaming gamer videogame esports console playstation xbox nintendo minecraft fortnite roblox",
-  news: "news journalist journalism newspaper report reporting reporter article articles interview interviews scoop deadline deadlines broadcast media social instagram tiktok podcast press influencer",
+  film: "video videos film films filming movie movies camera cameras photo photos photograph photographer photography lens lenses footage shoot shoots portrait portraits wedding weddings lightroom aperture youtube youtuber vlog vlogger tv television channel stream streamer streaming twitch edit anime animation animate youtube youtuber subscribers subs thumbnail thumbnails upload uploads uploading vlog vlogging views viral tiktok shorts reels camera",
+  games: "game games gaming gamer videogame esports console playstation xbox nintendo minecraft fortnite roblox twitch stream streams streaming streamer viewers chat valorant league fortnite fifa speedrun speedrunning controller headset esports tournament tournaments mods modding discord ranked lobby clutch gg",
+  news: "news journalist journalism newspaper report reporting reporter article articles interview interviews scoop deadline deadlines broadcast media social instagram tiktok podcast press influencer followers likes algorithm sponsor sponsors sponsored brand deals engagement posting",
   // Words
   write: "write writing writer wrote book books author novel story stories poem poetry publish published library librarian read reading reader editor editing poems poet word words spell spelling letter letters journal diary magazine alphabet grammar essay blog transcript transcripts typing",
   lang: "language languages translate translating translation translator interpret interpreter french spanish german chinese english localization dictionary",
@@ -117,6 +117,8 @@ const ALIASES = {
   "parkour": "Parkour Athlete", "freerunner": "Parkour Athlete", "traceur": "Parkour Athlete", "lorry driver": "Truck Driver",
   "estate agent": "Real Estate Agent", "gp": "General Practitioner", "family doctor": "General Practitioner", "binman": "Refuse Collector",
   "garbage man": "Refuse Collector", "postman": "Mail Carrier", "postwoman": "Mail Carrier", "lollipop lady": "School Crossing Guard",
+  "tiktoker": "Content Creator / YouTuber", "influencer": "Influencer", "pro gamer": "Esports Player",
+  "professional gamer": "Esports Player", "twitch streamer": "Twitch Streamer", "content creator": "Content Creator / YouTuber",
   "engineer": "Mechanical Engineer", "inventor": "Inventor", "magician": "Magician", "dancer": "Dancer",
 };
 

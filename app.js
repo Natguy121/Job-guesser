@@ -75,7 +75,10 @@
     input.value = state.texts[state.i] || "";
     input.placeholder = q.hint || "Type your answer here…";
     $("host").hidden = !say;
-    if (say) $("host").textContent = say;
+    if (say) {
+      $("host").textContent = say;
+      $("host").className = `host tone-${state.i % 6}`; // a new pastel colour each question
+    }
     const card = $("qCard");
     card.classList.remove("pop");
     void card.offsetWidth; // restart the animation
@@ -218,7 +221,7 @@
     const ctx = canvas.getContext("2d");
     const w = (canvas.width = window.innerWidth);
     const h = (canvas.height = window.innerHeight);
-    const colors = ["#FFC23D", "#FF5A36", "#49B8FF", "#B48CFF", "#5BE3A0"];
+    const colors = ["#FF4D4D", "#FF9F1C", "#FFC800", "#22B573", "#3A7BFF", "#8C52FF"];
     const bits = Array.from({ length: 90 }, () => ({
       x: w / 2 + (Math.random() - 0.5) * w * 0.3, y: h * 0.35,
       vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
@@ -271,5 +274,5 @@
   $("moreJobs").addEventListener("click", () => { state.listLimit += PAGE; renderAllJobs(); });
   $("retakeBtn").addEventListener("click", () => show("start"));
 
-  $("jobTotal").textContent = prepared.list.length;
+  $("jobTotal").textContent = prepared.list.length.toLocaleString("en-US");
 })();

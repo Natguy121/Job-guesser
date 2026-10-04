@@ -4,7 +4,7 @@ A job guessing game for grown-ups. The player picks how many questions (5 to 35)
 
 ## How it works
 
-1. **5 to 35 short, plain questions, one rung of a ladder each.** A slider on the start screen sets the length, with a meter from less accurate to more accurate showing the measured accuracy for that length. Anyone in any job can answer the questions, wherever they are.
+1. **5 to 35 short, plain questions, one rung of a ladder each.** A slider on the start screen sets the length, with a meter from less accurate to more accurate showing the measured accuracy for that length (from about 1 in 3 games right first time at 5 questions to almost 6 in 10 at 30 or more, for players who leave about half their answers vague). Anyone in any job can answer the questions, wherever they are.
    - A bright, flat rainbow look (rainbow stripes, a ladder that fills in rainbow colours, pastel host bubbles), relaxed by default with gentle transitions and no clock. There's an optional timed challenge (about 9 seconds a question); when it runs out, the game guesses with what it has.
    - Up to 12 fixed questions (short games use the most telling ones first): where you work, what you wear, how you got the job, what you do most of the day, who you work with, your tools, the best and hardest parts, your boss, a word people at your job use, what people ask you, and one big clue.
    - After those come follow-ups ("What do you build or fix?", "How does money come into your job?"). Each one is picked because it best splits the game's current top guesses.

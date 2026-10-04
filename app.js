@@ -7,10 +7,12 @@
   // Hand-written jobs plus the big imported list of job titles (all-jobs.js).
   const prepared = Engine.prepareJobs(Engine.allJobs(JOBS, typeof ALL_JOB_TITLES === "undefined" ? null : ALL_JOB_TITLES));
 
-  // Estimated accuracy for each game length: the share of the 29 test workers in
-  // tests/ (simple, sports, creators) whose first guess was right. Filled in between.
-  // Re-measure with: node tests/measure.js workers-simple --n 10
-  const ACCURACY = { 5: 0.59, 10: 0.76, 15: 0.76, 20: 0.76, 25: 0.79, 30: 0.79, 35: 0.79 };
+  // Estimated accuracy for each game length: the share of games where the first
+  // guess was right, for the 29 test workers in tests/ answering like real
+  // players who leave about half their answers blank or vague.
+  // Re-measure with: node tests/measure.js workers-simple --n 10 --vague 0.5
+  // (35 measured a little lower only because the test players run out of fresh answers.)
+  const ACCURACY = { 5: 0.35, 10: 0.42, 15: 0.55, 20: 0.56, 25: 0.56, 30: 0.57, 35: 0.57 };
   function accuracyFor(n) {
     const keys = Object.keys(ACCURACY).map(Number).sort((x, y) => x - y);
     const lo = keys.filter(k => k <= n).pop(), hi = keys.find(k => k >= n);
@@ -304,7 +306,10 @@
     const n = Number($("numQ").value);
     const acc = accuracyFor(n);
     $("numQOut").textContent = n;
-    $("accFill").style.width = `${Math.round(acc * 100)}%`;
+    // The bar runs from nearly empty at 5 questions to full at 35, so you can see the
+    // gain; the sentence below gives the actual estimate.
+    const lo = ACCURACY[5], hi = ACCURACY[35];
+    $("accFill").style.width = `${Math.round(8 + 92 * (acc - lo) / (hi - lo))}%`;
     $("accText").textContent = `${n} questions: about ${Math.round(acc * 10)} in 10 games guessed right first time` +
       (n <= 8 ? ". Quick, but it's a long shot!" : n >= 30 ? ". Thorough, but it takes a while." : ".");
     $("timedLabel").textContent = `Timed challenge (${Math.floor(n * 9 / 60)}:${String(n * 9 % 60).padStart(2, "0")})`;

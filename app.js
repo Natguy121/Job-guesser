@@ -1,6 +1,5 @@
 // Gift Elf — page logic
 (function () {
-  const QUESTIONS_PER_ROUND = 10;
   const EXTRA_QUESTIONS = 5;
   const REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = id => document.getElementById(id);
@@ -33,7 +32,7 @@
 
   let state = GiftEngine.start();
   let current = null;     // the trait being asked now
-  let limit = QUESTIONS_PER_ROUND;
+  let limit = 16;
 
   function show(id) {
     ["start", "quiz", "thinking", "result"].forEach(s => { $(s).hidden = s !== id; });
@@ -132,7 +131,7 @@
   // ---------- Events ----------
   $("startBtn").addEventListener("click", () => {
     state = GiftEngine.start(budget());
-    limit = QUESTIONS_PER_ROUND;
+    limit = +$("qSlider").value;
     show("quiz");
     renderQuestion("Let's find them something wonderful!");
   });
@@ -166,6 +165,9 @@
   $("budget").max = BUDGETS.length - 1;
   $("budget").value = BUDGETS.indexOf(100);
   $("budget").addEventListener("input", showBudget);
+  $("qSlider").addEventListener("input", () => {
+    $("qOut").textContent = $("qTotal").textContent = $("qSlider").value;
+  });
   showBudget();
   snow();
 })();

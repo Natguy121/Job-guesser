@@ -19,11 +19,16 @@
       <p class="elf-big" aria-hidden="true">🧝</p>
       <p class="eyebrow">Gift Elf</p>
       <h1>Stuck for a Christmas present? <span class="hl">I'll find one.</span></h1>
-      <p class="lead">Think of the person you're shopping for. Answer 10 quick questions about them, and I'll pick the perfect gift from my sack of <strong id="giftTotal">279</strong> real presents that fit your budget.</p>
+      <p class="lead">Think of the person you're shopping for. Answer <strong id="qTotal">16</strong> quick questions about them, and I'll pick the perfect gift from my sack of <strong id="giftTotal">279</strong> real presents that fit your budget.</p>
       <label class="budget" for="budget">
         <span class="budget-top"><span>Your budget, up to</span><output id="budgetOut" for="budget">$100</output></span>
         <input type="range" id="budget" min="0" max="18" step="1" value="9">
         <span class="budget-ends" aria-hidden="true"><span>$10</span><span>No limit</span></span>
+      </label>
+      <label class="budget" for="qSlider">
+        <span class="budget-top"><span>Number of questions</span><output id="qOut" for="qSlider">16</output></span>
+        <input type="range" id="qSlider" min="5" max="30" step="1" value="16">
+        <span class="budget-ends" aria-hidden="true"><span>5 (quick)</span><span>30 (most accurate)</span></span>
       </label>
       <button class="btn btn-go" id="startBtn" type="button">Let's find a gift 🎁</button>
     </div>
@@ -32,7 +37,7 @@
   <!-- QUESTIONS -->
   <section id="quiz" class="screen" hidden>
     <div class="quiz-top">
-      <span class="q-count" id="qCount">Question 1 of 10</span>
+      <span class="q-count" id="qCount">Question 1 of 16</span>
       <ol class="baubles" id="baubles" aria-hidden="true"></ol>
     </div>
 

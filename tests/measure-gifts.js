@@ -12,7 +12,7 @@
 //               shopper was picturing a science kit)
 //   exact gift  the top pick (or top 3 / top 5) is the very gift we started from
 //
-//   node tests/measure-gifts.js          (10 questions)
+//   node tests/measure-gifts.js          (16 questions, the default)
 //   node tests/measure-gifts.js --n 15
 const fs = require("fs");
 const path = require("path");
@@ -22,7 +22,7 @@ new Function("g", ["gifts.js", "gift-engine.js"].map(f => fs.readFileSync(path.j
   ";g.E=GiftEngine;g.P=PLATFORM_TRAITS;g.G=GIFTS;g.A=AGE_TRAITS;g.T=TRAITS")(g);
 const AGE = g.A;
 const nArg = process.argv.indexOf("--n");
-const N = nArg > 0 ? +process.argv[nArg + 1] : 10;
+const N = nArg > 0 ? +process.argv[nArg + 1] : 16;
 
 let seed = 7;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

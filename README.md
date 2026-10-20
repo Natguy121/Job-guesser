@@ -6,9 +6,9 @@ A Christmas gift finder that plays like Akinator. Set your budget with the slide
 
 - **1,250 real products** (`gifts.js`), each with a rough US price: named video games for Switch, PlayStation and Xbox, specific LEGO sets, every NFL, NBA and MLB team's jersey or cap, named books, vinyl albums, perfumes, Broadway shows, Funko Pops, Pokémon plushes, board games, experiences and more. Each lists the traits it suits (age, console, fandom, interests like outdoors, sweet tooth, cosy nights in).
 - **Two sliders** on the start screen: budget ($10 to no limit; gifts over budget are never suggested) and number of questions (5 to 30).
-- **48 questions**, one per trait ("Do they love being outdoors?", "Do they have a Nintendo Switch?", "Are they a Star Wars fan?").
+- **1,298 questions**: 48 broad ones about the person ("Do they love being outdoors?", "Do they have a Nintendo Switch?") plus 1,250 specific ones, one for each gift ("Do they cheer for the Dallas Cowboys?", "Do they make fresh pasta?", "Is Gengar their favourite Pokémon?"). No two are the same question reworded.
 - **Akinator-style guessing** (`gift-engine.js`). Every gift starts equally likely. Each answer makes gifts that fit it more likely and the rest less likely (never to zero, so one slip isn't fatal). "Don't know" changes nothing.
-- **Smart, branching questions.** Each question is the one expected to narrow the gifts down the most, and every answer leads down its own path: after a "No", the elf never asks the question it would have asked after a "Yes". Once you say "Yes" to an age, the other age questions are skipped. A "No" to an age or console only rules out gifts just for that one, so a game on every console survives "No" to Xbox.
+- **Different questions every game.** The first 3 questions are broad; after that the elf picks at random between the best 2 broad questions and the best 3 gift questions (about the presents that look likeliest so far). It remembers in your browser which questions you've already seen and doesn't ask them again; once nearly all the broad ones are used up they come back. After a "No", it never asks what it would have asked after a "Yes". A "Yes" to a gift's question also nudges up similar gifts.
 - **The result** shows the top pick with the reasons it fits, five more ideas, and a "Not quite? Ask me 5 more" button.
 - A flat Christmas look: snowfall, a string of baubles that fills in as you answer, a candy-cane "How sure I am" bar, and an elf who reacts to your answers. Keys 1–5 answer, and Back undoes the last answer.
 
@@ -23,9 +23,9 @@ node tests/measure-gifts.js --n 30   # the most the slider allows
 
 | Questions | Good pick* | Exact gift | Exact gift in top 5 |
 |---|---|---|---|
-| 5 | 45% | 5% | 18% |
-| 10 | 69% | 20% | 42% |
-| 15 | 72% | 30% | 61% |
+| 5 | 35% | 1% | 3% |
+| 10 | 53% | 4% | 9% |
+| 16 | 66% | 9% | 16% |
 
 \*The top pick suits the person's age, runs on a console they own (for games) and matches at least one of their real interests (a telescope for a space-mad kid counts, even if the shopper was picturing a science kit).
 

@@ -47,8 +47,16 @@ function makePerson(gift) {
   return { age, has };
 }
 
-function reply(person, trait) {
+function reply(person, trait, gift) {
   const r = rand();
+  // A gift's own question: yes for the gift we started from, and now and then
+  // for another gift that shares one of their interests.
+  if (g.E.isGiftQuestion(trait)) {
+    if (trait === gift.id) return r < 0.8 ? "yes" : r < 0.95 ? "probably" : "unsure";
+    const other = g.G.find(x => x.id === trait);
+    const shares = [...other.traits].some(t => !NOT_INTEREST.has(t) && person.has.has(t));
+    return shares && r < 0.15 ? "probably" : r < 0.7 ? "no" : r < 0.9 ? "probablyNot" : "unsure";
+  }
   if (person.has.has(trait)) return r < 0.75 ? "yes" : r < 0.92 ? "probably" : "unsure";
   return r < 0.65 ? "no" : r < 0.88 ? "probablyNot" : r < 0.96 ? "unsure" : "probably";
 }
@@ -68,9 +76,9 @@ for (let run = 0; run < 3; run++) {
     // A budget the gift fits in: its price, or a bit more.
     let s = g.E.start(gift.price * (1 + rand() * 2));
     for (let i = 0; i < N; i++) {
-      const t = g.E.nextQuestion(s);
+      const t = g.E.nextQuestion(s, new Set(), rand);
       if (!t) break;
-      s = g.E.answer(s, t, reply(person, t));
+      s = g.E.answer(s, t, reply(person, t, gift));
     }
     const list = g.E.ranked(s);
     const r = list.findIndex(x => x.name === gift.name);

@@ -30,6 +30,18 @@
   const money = n => (n === Infinity ? "No limit" : `$${n}`);
   const budget = () => BUDGETS[+$("budget").value];
 
+  // Questions seen in earlier games, kept in this browser so the next game asks
+  // different ones. Once nearly all the broad questions are used up, they come back.
+  const SEEN_KEY = "giftElfSeen";
+  let seen = new Set();
+  try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch (e) { /* no storage: start fresh */ }
+  function remember(key) {
+    seen.add(key);
+    if (GiftEngine.TRAIT_KEYS.filter(t => !seen.has(t)).length < 12) GiftEngine.TRAIT_KEYS.forEach(t => seen.delete(t));
+    if (GiftEngine.ALL_KEYS.every(k => seen.has(k))) seen.clear();
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch (e) { /* fine without it */ }
+  }
+
   let state = GiftEngine.start();
   let current = null;     // the trait being asked now
   let limit = 16;
@@ -42,11 +54,11 @@
   // ---------- Questions ----------
   function renderQuestion(say) {
     const n = state.asked.length;
-    current = GiftEngine.nextQuestion(state);
+    current = GiftEngine.nextQuestion(state, seen);
     $("qCount").textContent = `Question ${n + 1} of ${limit}`;
     $("baubles").innerHTML = Array.from({ length: limit }, (_, k) =>
       `<li class="${k < n ? "done" : k === n ? "now" : ""}"></li>`).join("");
-    $("qText").textContent = TRAITS[current];
+    $("qText").textContent = GiftEngine.questionText(current);
     $("bubble").textContent = say;
     $("backBtn").disabled = n === 0;
     $("sureFill").style.width = `${Math.round(6 + 94 * GiftEngine.confidence(state))}%`;
@@ -67,6 +79,7 @@
     if (!current) return;
     const before = GiftEngine.confidence(state);
     state = GiftEngine.answer(state, current, value);
+    remember(current);
     if (state.asked.length >= limit) return reveal();
     renderQuestion(reaction(before, GiftEngine.confidence(state), value));
   }
@@ -80,13 +93,13 @@
     $("giftName").textContent = best.name;
     $("giftWhy").textContent = best.why;
     $("giftPrice").textContent = `About $${best.price}`;
-    const why = GiftEngine.reasons(state, best).map(t => REASON[t]).filter(Boolean).slice(0, 3);
+    const why = GiftEngine.reasons(state, best).map(t => (t === best.id ? "you said they'd love it" : REASON[t])).filter(Boolean).slice(0, 3);
     $("giftReasons").textContent = why.length ? `Why: ${why.join(", ")}.` : "";
     $("more").innerHTML = top.slice(1, 6).map(g => `
       <li><span class="m-emoji" aria-hidden="true">${g.emoji}</span>
         <span class="m-text"><strong>${esc(g.name)}</strong><span>${esc(g.why)}</span></span>
         <span class="m-price">$${g.price}</span></li>`).join("");
-    $("moreQsBtn").hidden = state.asked.length >= GiftEngine.TRAIT_KEYS.length;
+    $("moreQsBtn").hidden = state.asked.length >= GiftEngine.ALL_KEYS.length;
     if (REDUCED) { show("result"); return; }
     show("thinking");
     setTimeout(() => { show("result"); sparkle(); }, 1400);
@@ -150,7 +163,7 @@
     renderQuestion("Let's try that one again.");
   });
   $("moreQsBtn").addEventListener("click", () => {
-    limit = Math.min(state.asked.length + EXTRA_QUESTIONS, GiftEngine.TRAIT_KEYS.length);
+    limit = Math.min(state.asked.length + EXTRA_QUESTIONS, GiftEngine.ALL_KEYS.length);
     show("quiz");
     renderQuestion("Okay, a few more questions!");
   });

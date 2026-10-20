@@ -19,7 +19,7 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const g = {};
 new Function("g", ["gifts.js", "gift-engine.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n") +
-  ";g.E=GiftEngine;g.G=GIFTS;g.A=AGE_TRAITS;g.T=TRAITS")(g);
+  ";g.E=GiftEngine;g.P=PLATFORM_TRAITS;g.G=GIFTS;g.A=AGE_TRAITS;g.T=TRAITS")(g);
 const AGE = g.A;
 const nArg = process.argv.indexOf("--n");
 const N = nArg > 0 ? +process.argv[nArg + 1] : 10;
@@ -28,7 +28,7 @@ let seed = 7;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
 
 // Traits that describe the shopping situation, not the person's interests.
-const NOT_INTEREST = new Set([...AGE, "cheap", "pricey", "practical", "funny", "sentimental", "experience", "relax"]);
+const NOT_INTEREST = new Set([...AGE, ...g.P, "pokemon", "starwars", "marvel", "harrypotter", "disney", "practical", "funny", "sentimental", "experience", "relax"]);
 const INTERESTS = Object.keys(g.T).filter(t => !NOT_INTEREST.has(t));
 
 function makePerson(gift) {
@@ -36,7 +36,12 @@ function makePerson(gift) {
   const pool = ages.length ? ages : AGE;
   const age = pool[Math.floor(rand() * pool.length)];
   const has = new Set([age]);
-  gift.traits.forEach(t => { if (!AGE.includes(t)) has.add(t); });
+  gift.traits.forEach(t => { if (!AGE.includes(t) && !g.P.includes(t)) has.add(t); });
+  // One console the game runs on (or a random one for gamers), sometimes two.
+  const plats = g.P.filter(p => gift.traits.has(p));
+  if (plats.length) has.add(plats[Math.floor(rand() * plats.length)]);
+  if (gift.traits.has("gamer")) g.P.forEach(p => { if (!plats.length && rand() < 0.4 || rand() < 0.15) has.add(p); });
+  ["pokemon", "starwars", "marvel", "harrypotter", "disney"].forEach(t => { if (gift.traits.has(t) || rand() < 0.08) has.add(t); });
   INTERESTS.forEach(t => { if (rand() < 0.12) has.add(t); });           // a few extra interests
   ["practical", "funny", "sentimental", "experience", "relax"].forEach(t => { if (rand() < 0.2) has.add(t); });
   return { age, has };
@@ -50,6 +55,8 @@ function reply(person, trait) {
 
 function goodPick(pick, person) {
   const ageOk = !AGE.some(a => pick.traits.has(a)) || pick.traits.has(person.age);
+  const consoleOk = !g.P.some(p => pick.traits.has(p)) || g.P.some(p => pick.traits.has(p) && person.has.has(p));
+  if (!consoleOk) return false;
   const interest = [...pick.traits].some(t => !NOT_INTEREST.has(t) && person.has.has(t));
   return ageOk && interest;
 }
@@ -58,7 +65,8 @@ let top1 = 0, top3 = 0, top5 = 0, good = 0, total = 0;
 for (let run = 0; run < 3; run++) {
   g.G.forEach(gift => {
     const person = makePerson(gift);
-    let s = g.E.start();
+    // A budget the gift fits in: its price, or a bit more.
+    let s = g.E.start(gift.price * (1 + rand() * 2));
     for (let i = 0; i < N; i++) {
       const t = g.E.nextQuestion(s);
       if (!t) break;

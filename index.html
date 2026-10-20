@@ -19,7 +19,12 @@
       <p class="elf-big" aria-hidden="true">🧝</p>
       <p class="eyebrow">Gift Elf</p>
       <h1>Stuck for a Christmas present? <span class="hl">I'll find one.</span></h1>
-      <p class="lead">Think of the person you're shopping for. Answer 10 quick questions about them, and I'll pick the perfect gift from my sack of <strong id="giftTotal">130</strong> ideas.</p>
+      <p class="lead">Think of the person you're shopping for. Answer 10 quick questions about them, and I'll pick the perfect gift from my sack of <strong id="giftTotal">279</strong> real presents that fit your budget.</p>
+      <label class="budget" for="budget">
+        <span class="budget-top"><span>Your budget, up to</span><output id="budgetOut" for="budget">$100</output></span>
+        <input type="range" id="budget" min="0" max="18" step="1" value="9">
+        <span class="budget-ends" aria-hidden="true"><span>$10</span><span>No limit</span></span>
+      </label>
       <button class="btn btn-go" id="startBtn" type="button">Let's find a gift 🎁</button>
     </div>
   </section>
@@ -66,6 +71,7 @@
       <p class="eyebrow">My top pick</p>
       <p class="gift-emoji" id="giftEmoji"></p>
       <h1 class="gift-name" id="giftName"></h1>
+      <p class="gift-price" id="giftPrice"></p>
       <p class="gift-why" id="giftWhy"></p>
       <p class="gift-reasons" id="giftReasons"></p>
     </div>

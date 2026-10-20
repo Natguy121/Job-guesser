@@ -10,7 +10,9 @@
   // Short phrases for "why this gift" ("they love being outdoors").
   const REASON = {
     kid: "they're a kid", teen: "they're a teenager", adult: "they're a grown-up", senior: "it suits grandparents",
-    cheap: "it's a nice small gift", pricey: "it's a real treat", outdoors: "they love the outdoors",
+    nintendo: "they have a Switch", playstation: "they have a PlayStation", xbox: "they play on Xbox or PC",
+    pokemon: "they love Pokémon", starwars: "they love Star Wars", marvel: "they love Marvel",
+    harrypotter: "they love Harry Potter", disney: "they love Disney", outdoors: "they love the outdoors",
     sporty: "they love sport", fitness: "they're into fitness", gamer: "they play games", techie: "they love gadgets",
     reader: "they love reading", crafty: "they like making things", artsy: "they're artistic", music: "they love music",
     cook: "they love cooking", coffee: "they love coffee or tea", sweet: "they have a sweet tooth",
@@ -23,6 +25,11 @@
     boardgames: "they love games night", home: "they love their home", relax: "they need to relax",
     experience: "they'd love to do something special",
   };
+
+  // Budget slider steps, in dollars; the last one means "no limit".
+  const BUDGETS = [10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 150, 200, 250, 300, 400, 500, 750, 1000, Infinity];
+  const money = n => (n === Infinity ? "No limit" : `$${n}`);
+  const budget = () => BUDGETS[+$("budget").value];
 
   let state = GiftEngine.start();
   let current = null;     // the trait being asked now
@@ -73,11 +80,13 @@
     $("giftEmoji").textContent = best.emoji;
     $("giftName").textContent = best.name;
     $("giftWhy").textContent = best.why;
+    $("giftPrice").textContent = `About $${best.price}`;
     const why = GiftEngine.reasons(state, best).map(t => REASON[t]).filter(Boolean).slice(0, 3);
     $("giftReasons").textContent = why.length ? `Why: ${why.join(", ")}.` : "";
     $("more").innerHTML = top.slice(1, 6).map(g => `
       <li><span class="m-emoji" aria-hidden="true">${g.emoji}</span>
-        <span class="m-text"><strong>${esc(g.name)}</strong><span>${esc(g.why)}</span></span></li>`).join("");
+        <span class="m-text"><strong>${esc(g.name)}</strong><span>${esc(g.why)}</span></span>
+        <span class="m-price">$${g.price}</span></li>`).join("");
     $("moreQsBtn").hidden = state.asked.length >= GiftEngine.TRAIT_KEYS.length;
     if (REDUCED) { show("result"); return; }
     show("thinking");
@@ -122,7 +131,7 @@
 
   // ---------- Events ----------
   $("startBtn").addEventListener("click", () => {
-    state = GiftEngine.start();
+    state = GiftEngine.start(budget());
     limit = QUESTIONS_PER_ROUND;
     show("quiz");
     renderQuestion("Let's find them something wonderful!");
@@ -138,7 +147,7 @@
   });
   $("backBtn").addEventListener("click", () => {
     if (!state.asked.length) return;
-    state = GiftEngine.replay(state.asked.slice(0, -1), state.answers.slice(0, -1));
+    state = GiftEngine.replay(state.budget, state.asked.slice(0, -1), state.answers.slice(0, -1));
     renderQuestion("Let's try that one again.");
   });
   $("moreQsBtn").addEventListener("click", () => {
@@ -148,6 +157,15 @@
   });
   $("againBtn").addEventListener("click", () => show("start"));
 
-  $("giftTotal").textContent = GIFTS.length;
+  // Show the budget, and how many gifts fit it.
+  function showBudget() {
+    const b = budget();
+    $("budgetOut").textContent = money(b);
+    $("giftTotal").textContent = GIFTS.filter(g => g.price <= b).length;
+  }
+  $("budget").max = BUDGETS.length - 1;
+  $("budget").value = BUDGETS.indexOf(100);
+  $("budget").addEventListener("input", showBudget);
+  showBudget();
   snow();
 })();

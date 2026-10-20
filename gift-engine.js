@@ -7,22 +7,24 @@
 const GiftEngine = (function () {
   const TRAIT_KEYS = Object.keys(TRAITS);
   const ANSWERS = { yes: 1, probably: 0.75, unsure: 0.5, probablyNot: 0.25, no: 0 };
+  // Groups where a gift lists the ones it suits: ages, and games consoles.
+  const GROUPS = [AGE_TRAITS, PLATFORM_TRAITS];
+  const groupOf = trait => GROUPS.find(g => g.includes(trait));
 
   // How well a gift fits a trait, from 0 (not at all) to 1 (perfectly).
   function fit(gift, trait) {
     if (gift.traits.has(trait)) return 1;
-    if (AGE_TRAITS.includes(trait)) {
-      // A gift that lists ages doesn't suit the others; one that lists none suits everyone.
-      return AGE_TRAITS.some(a => gift.traits.has(a)) ? 0 : 0.7;
+    const group = groupOf(trait);
+    if (group) {
+      // A gift that lists ages (or consoles) doesn't suit the others; one that lists none suits everyone.
+      return group.some(a => gift.traits.has(a)) ? 0 : 0.7;
     }
-    if (trait === "cheap" && gift.traits.has("pricey")) return 0;
-    if (trait === "pricey" && gift.traits.has("cheap")) return 0;
-    if (trait === "cheap" || trait === "pricey") return 0.45; // mid-priced
     return 0.2; // not what the gift is about, but it could still suit them
   }
 
-  function start() {
-    return { weights: GIFTS.map(() => 1), asked: [], answers: [] };
+  // Gifts over the budget are left out from the start.
+  function start(budget = Infinity) {
+    return { budget, weights: GIFTS.map(g => (g.price <= budget ? 1 : 0)), asked: [], answers: [] };
   }
 
   // Apply one answer. "Don't know" changes nothing.
@@ -32,20 +34,21 @@ const GiftEngine = (function () {
       if (a === 0.5) return w;
       let v = fit(GIFTS[i], trait);
       // "Not a child" shouldn't rule out a gift that also suits teens or adults:
-      // a "no" to an age only counts against gifts that are just for that age.
-      if (AGE_TRAITS.includes(trait) && a < 0.5 && v === 1 &&
-          AGE_TRAITS.some(t => t !== trait && GIFTS[i].traits.has(t))) v = a;
+      // a "no" to an age (or console) only counts against gifts just for that one.
+      const group = groupOf(trait);
+      if (group && a < 0.5 && v === 1 && group.some(t => t !== trait && GIFTS[i].traits.has(t))) v = a;
       return w * (1 - 0.9 * Math.abs(a - v)); // never all the way to zero, so one slip isn't fatal
     });
-    return { weights, asked: state.asked.concat(trait), answers: state.answers.concat(value) };
+    return { budget: state.budget, weights, asked: state.asked.concat(trait), answers: state.answers.concat(value) };
   }
 
   // Replay answers from scratch (used for the Back button).
-  function replay(asked, answers) {
-    return asked.reduce((s, t, i) => answer(s, t, answers[i]), start());
+  function replay(budget, asked, answers) {
+    return asked.reduce((s, t, i) => answer(s, t, answers[i]), start(budget));
   }
 
   // Traits that no longer need asking. Once an age gets a "yes", the other ages are settled.
+  // Consoles aren't, since people often own more than one.
   function settled(state) {
     const done = new Set(state.asked);
     const ageYes = state.asked.some((t, i) => AGE_TRAITS.includes(t) && (state.answers[i] === "yes" || state.answers[i] === "probably"));
@@ -81,12 +84,13 @@ const GiftEngine = (function () {
   function ranked(state) {
     const total = state.weights.reduce((a, b) => a + b, 0);
     return GIFTS.map((g, i) => ({ ...g, chance: state.weights[i] / total }))
+      .filter(g => g.price <= state.budget)
       .sort((a, b) => b.chance - a.chance);
   }
 
   // How sure the elf is, from 0 to 1: how far the top gift is ahead of the rest.
   function confidence(state) {
-    const [a, b] = ranked(state);
+    const [a, b = { chance: 0 }] = ranked(state);
     return Math.min(1, a.chance * 3 + (a.chance - b.chance) * 4);
   }
 

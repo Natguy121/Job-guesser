@@ -3,119 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Future Map</title>
+<title>Gift Elf</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Fredoka:wght@600;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<canvas id="confetti" hidden></canvas>
-<div class="rainbow" aria-hidden="true"></div>
+<canvas id="snow" aria-hidden="true"></canvas>
 
-<main class="stage">
+<main class="page">
   <!-- START -->
   <section id="start" class="screen">
-    <div class="marquee">
-      <p class="eyebrow">The job guessing game</p>
-      <h1>Climb the ladder.<br><span class="hl">I'll guess your job.</span></h1>
-      <p class="lead">Easy questions, one rung each. You choose how many. Answer in your own words, but never say the name of your job. Take your time: my meter warms up as I get closer, and at the top I guess from <strong id="jobTotal">1,000</strong> jobs.</p>
+    <div class="card hero">
+      <p class="elf-big" aria-hidden="true">🧝</p>
+      <p class="eyebrow">Gift Elf</p>
+      <h1>Stuck for a Christmas present? <span class="hl">I'll find one.</span></h1>
+      <p class="lead">Think of the person you're shopping for. Answer 10 quick questions about them, and I'll pick the perfect gift from my sack of <strong id="giftTotal">130</strong> ideas.</p>
+      <button class="btn btn-go" id="startBtn" type="button">Let's find a gift 🎁</button>
     </div>
-
-    <div class="length-pick">
-      <label for="numQ" class="length-label">How many questions? <output id="numQOut" for="numQ">20</output></label>
-      <input type="range" id="numQ" min="5" max="35" step="1" value="20">
-      <div class="acc-meter" aria-hidden="true"><div class="acc-fill" id="accFill"></div></div>
-      <div class="acc-scale" aria-hidden="true"><span>Less accurate</span><span>More accurate</span></div>
-      <p class="acc-text" id="accText"></p>
-    </div>
-
-    <label class="timed"><input type="checkbox" id="timed"> <span id="timedLabel">Timed challenge</span></label>
-
-    <button class="btn btn-go" id="startBtn" type="button">Step onto the ladder</button>
   </section>
 
-  <!-- QUIZ -->
+  <!-- QUESTIONS -->
   <section id="quiz" class="screen" hidden>
     <div class="quiz-top">
-      <div class="quiz-top-left">
-        <span id="qCount" class="q-count">Rung 1</span>
-        <div class="ladder" id="ladder" aria-hidden="true"></div>
+      <span class="q-count" id="qCount">Question 1 of 10</span>
+      <ol class="baubles" id="baubles" aria-hidden="true"></ol>
+    </div>
+
+    <div class="sure">
+      <span class="sure-label">How sure I am</span>
+      <div class="sure-track"><div class="sure-fill" id="sureFill"></div></div>
+    </div>
+
+    <div class="elf-row">
+      <span class="elf" aria-hidden="true">🧝</span>
+      <p class="bubble" id="bubble">Let's get started!</p>
+    </div>
+
+    <div class="card q-card" id="qCard">
+      <h2 class="q-text" id="qText"></h2>
+      <div class="answers" id="answers">
+        <button class="ans ans-yes" type="button" data-a="yes"><kbd>1</kbd>Yes</button>
+        <button class="ans ans-prob" type="button" data-a="probably"><kbd>2</kbd>Probably</button>
+        <button class="ans ans-unsure" type="button" data-a="unsure"><kbd>3</kbd>Don't know</button>
+        <button class="ans ans-probnot" type="button" data-a="probablyNot"><kbd>4</kbd>Probably not</button>
+        <button class="ans ans-no" type="button" data-a="no"><kbd>5</kbd>No</button>
       </div>
-      <div class="clock" id="clock" hidden>
-        <svg viewBox="0 0 80 80" aria-hidden="true">
-          <circle class="clock-track" cx="40" cy="40" r="34"></circle>
-          <circle class="clock-ring" id="clockRing" cx="40" cy="40" r="34"></circle>
-        </svg>
-        <span id="clockText" class="clock-text">3:00</span>
-      </div>
+      <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
     </div>
-
-    <div class="heat" id="heat" aria-live="polite">
-      <span class="heat-icon" id="heatIcon">🧊</span>
-      <div class="heat-track"><div class="heat-cover" id="heatCover"></div></div>
-      <span class="heat-label" id="heatLabel">Ice cold</span>
-    </div>
-
-    <p class="host" id="host" hidden></p>
-
-    <div class="marquee q-card" id="qCard">
-      <h2 id="qText" class="q-text"></h2>
-      <form class="answer-form" id="answerForm">
-        <label for="answer" class="sr-only">Your answer</label>
-        <textarea id="answer" rows="2" maxlength="400" autocomplete="off" spellcheck="true"></textarea>
-        <div class="quiz-nav">
-          <button class="btn btn-quiet" id="backBtn" type="button">← Back</button>
-          <span class="nav-right">
-            <button class="btn btn-quiet" id="skipBtn" type="button">Skip</button>
-            <button class="btn btn-go btn-next" id="nextBtn" type="submit">Next</button>
-          </span>
-        </div>
-      </form>
-    </div>
-    <p class="key-hint">Enter to answer · Shift + Enter for a new line</p>
   </section>
 
-  <!-- DRUMROLL -->
-  <section id="drumroll" class="screen drumroll" hidden>
-    <p class="drum-text">Your job is…</p>
-    <p class="drum-sticks" aria-hidden="true">🥁</p>
+  <!-- THINKING -->
+  <section id="thinking" class="screen thinking" hidden>
+    <p class="think-elf" aria-hidden="true">🧝</p>
+    <p class="think-text">Checking my list…</p>
   </section>
 
-  <!-- RESULTS -->
-  <section id="results" class="screen" hidden>
-    <div class="marquee reveal" id="reveal">
-      <p class="eyebrow time-up" id="timeUp" hidden>⏰ Time's up!</p>
-      <p class="eyebrow" id="guessCount">My guess is…</p>
-      <h1 id="guessName" class="guess-name"></h1>
-      <p class="guess-desc" id="guessDesc"></p>
-      <p class="guess-why" id="guessWhy"></p>
-      <div class="guess-actions" id="guessAsk">
-        <span class="ask">Did I get it?</span>
-        <button class="btn btn-go" id="yesBtn" type="button">Yes!</button>
-        <button class="btn btn-ghost" id="noBtn" type="button">No, guess again</button>
-      </div>
-      <p class="guess-done" id="guessDone" hidden></p>
+  <!-- RESULT -->
+  <section id="result" class="screen" hidden>
+    <div class="card gift-card" id="giftCard">
+      <p class="eyebrow">My top pick</p>
+      <p class="gift-emoji" id="giftEmoji"></p>
+      <h1 class="gift-name" id="giftName"></h1>
+      <p class="gift-why" id="giftWhy"></p>
+      <p class="gift-reasons" id="giftReasons"></p>
     </div>
 
-    <h2>My shortlist</h2>
-    <ol class="top-jobs" id="topJobs"></ol>
+    <h2>More ideas they'd love</h2>
+    <ol class="more" id="more"></ol>
 
-    <h2>Stumped me? Find your job</h2>
-    <input type="search" id="jobSearch" class="search" placeholder="Search jobs, like 'nurse' or 'pilot'">
-    <p class="muted small" id="jobCount"></p>
-    <ul class="job-list" id="allJobs"></ul>
-    <button class="btn btn-quiet" id="moreJobs" type="button" hidden>Show more jobs</button>
-
-    <button class="btn btn-go" id="retakeBtn" type="button">Play again</button>
+    <div class="result-actions">
+      <button class="btn btn-go" id="moreQsBtn" type="button">Not quite? Ask me 5 more</button>
+      <button class="btn btn-ghost" id="againBtn" type="button">Find another gift</button>
+    </div>
   </section>
 </main>
 
-<script src="data.js"></script>
-<script src="jobs.js"></script>
-<script src="all-jobs.js"></script>
-<script src="words.js"></script>
-<script src="engine.js"></script>
+<script src="gifts.js"></script>
+<script src="gift-engine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

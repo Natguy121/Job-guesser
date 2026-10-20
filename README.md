@@ -26,6 +26,7 @@ node tests/measure-gifts.js --n 30   # the most the slider allows
 | 5 | 35% | 1% | 3% |
 | 10 | 53% | 4% | 9% |
 | 16 | 66% | 9% | 16% |
+| 30 | 77% | 22% | 31% |
 
 \*The top pick suits the person's age, runs on a console they own (for games) and matches at least one of their real interests (a telescope for a space-mad kid counts, even if the shopper was picturing a science kit).
 

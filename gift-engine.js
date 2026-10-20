@@ -5,18 +5,28 @@
 // likely. There are two kinds of question:
 //   - broad ones about the person ("Do they love being outdoors?"), one per trait
 //   - one question per gift ("Do they cheer for the Dallas Cowboys?"), 1,250 in all
-// The elf picks at random from the few best questions of each kind, and skips
-// questions you've seen in earlier games, so every game asks different things.
+// Every question is scored by its expected information gain. The elf picks at
+// random among the questions nearly as good as the best, preferring ones you
+// haven't seen in earlier games, so games differ without losing much accuracy.
 const GiftEngine = (function () {
   const TRAIT_KEYS = Object.keys(TRAITS);
   const GIFT_BY_ID = Object.fromEntries(GIFTS.map((g, i) => [g.id, i]));
-  const ALL_KEYS = TRAIT_KEYS.concat(GIFTS.map(g => g.id));
+  // Broad questions: one per trait, plus clue questions that hint at a trait.
+  // Each has how strongly a Yes and a No count (1 = asking about the trait itself).
+  const BROAD = {};
+  TRAIT_KEYS.forEach(t => { BROAD[t] = { trait: t, yes: 1, no: 1, question: TRAITS[t] }; });
+  CLUES.forEach(c => { BROAD[c.id] = c; });
+  const BROAD_KEYS = Object.keys(BROAD);
+  const ALL_KEYS = BROAD_KEYS.concat(GIFTS.map(g => g.id));
   const ANSWERS = { yes: 1, probably: 0.75, unsure: 0.5, probablyNot: 0.25, no: 0 };
   // How a gift's own question changes its weight.
   const OWN = { yes: 8, probably: 3, unsure: 1, probablyNot: 0.4, no: 0.08 };
-  // The elf picks at random between the best 2 broad questions and the best 3
-  // gift questions. The first few questions are always broad, to get started.
-  const BROAD_CHOICES = 2, GIFT_CHOICES = 3, BROAD_START = 3;
+  // A question is "good enough" if it narrows things down at least this much,
+  // compared with the best question. The elf picks at random among those.
+  const GOOD_ENOUGH = 0.85;
+  // An unseen question is asked instead of repeating one if it's at least this good
+  // (0: always, while any unseen question is left).
+  const FRESH_FLOOR = 0;
   // Groups where a gift lists the ones it suits: ages, and games consoles.
   const GROUPS = [AGE_TRAITS, PLATFORM_TRAITS];
   const groupOf = trait => GROUPS.find(g => g.includes(trait));
@@ -26,7 +36,7 @@ const GiftEngine = (function () {
   const FIT = {};
 
   function questionText(key) {
-    return isGiftQuestion(key) ? GIFTS[GIFT_BY_ID[key]].question : TRAITS[key];
+    return isGiftQuestion(key) ? GIFTS[GIFT_BY_ID[key]].question : BROAD[key].question;
   }
 
   // How well a gift fits a trait, from 0 (not at all) to 1 (perfectly).
@@ -42,6 +52,44 @@ const GiftEngine = (function () {
 
   TRAIT_KEYS.forEach(t => { FIT[t] = Float64Array.from(GIFTS, g => fit(g, t)); });
 
+  // How related each gift is to gift k, from 0 to 1: the share of k's interests
+  // it has, or -1 if it's for a different age. Worked out when first needed.
+  const RELATED = new Map();
+  function related(k) {
+    if (RELATED.has(k)) return RELATED.get(k);
+    const gk = GIFTS[k];
+    const likes = [...gk.traits].filter(t => !groupOf(t));
+    const ages = AGE_TRAITS.filter(t => gk.traits.has(t));
+    const rel = Float64Array.from(GIFTS, g => {
+      if (ages.length && AGE_TRAITS.some(t => g.traits.has(t)) && !ages.some(t => g.traits.has(t))) return -1;
+      return likes.length ? likes.filter(t => g.traits.has(t)).length / likes.length : 0;
+    });
+    RELATED.set(k, rel);
+    return rel;
+  }
+
+  // A gift's own question is also a clue about the person. A "Yes" to "Do they
+  // make fresh pasta?" means they probably love cooking and are a grown-up, so
+  // it lifts the pasta machine a lot and lowers gifts that share nothing with
+  // it. A "No" mostly lowers the pasta machine, and related gifts a little.
+  function ownFactor(a, value, k, i, rel) {
+    if (i === k) return OWN[value];
+    if (a > 0.5) {
+      const s = (a - 0.5) * 2;
+      return rel[i] < 0 ? 1 - 0.8 * s : 1 - 0.6 * s * (1 - rel[i]);
+    }
+    if (a < 0.5) return rel[i] > 0 ? 1 - 0.15 * (0.5 - a) * 2 * rel[i] : 1;
+    return 1;
+  }
+
+  // How an answer to a broad question changes a gift with fit v: the full effect
+  // for a trait question, blended towards no effect for a weaker clue.
+  function broadFactor(q, a, v) {
+    const full = 1 - 0.9 * Math.abs(a - v); // never all the way to zero, so one slip isn't fatal
+    const strength = a > 0.5 ? q.yes : q.no;
+    return 1 - strength + strength * full;
+  }
+
   // Gifts over the budget are left out from the start.
   function start(budget = Infinity) {
     return { budget, weights: GIFTS.map(g => (g.price <= budget ? 1 : 0)), asked: [], answers: [] };
@@ -52,26 +100,19 @@ const GiftEngine = (function () {
     const a = ANSWERS[value];
     let weights;
     if (isGiftQuestion(key)) {
-      // A gift's own question moves that gift a lot. A "yes" also nudges up
-      // gifts that share its interests (a Cowboys fan probably likes sport).
       const k = GIFT_BY_ID[key];
-      const likes = [...GIFTS[k].traits].filter(t => !groupOf(t));
-      const boost = a > 0.5 ? (a - 0.5) * 1.2 : 0;
-      weights = state.weights.map((w, i) => {
-        if (i === k) return w * OWN[value];
-        if (!boost || !likes.length) return w;
-        const share = likes.filter(t => GIFTS[i].traits.has(t)).length / likes.length;
-        return w * (1 + boost * share);
-      });
+      const rel = related(k);
+      weights = state.weights.map((w, i) => w * ownFactor(a, value, k, i, rel));
     } else {
+      const q = BROAD[key], t = q.trait;
+      const group = groupOf(t);
       weights = state.weights.map((w, i) => {
         if (a === 0.5) return w;
-        let v = fit(GIFTS[i], key);
+        let v = FIT[t][i];
         // "Not a child" shouldn't rule out a gift that also suits teens or adults:
         // a "no" to an age (or console) only counts against gifts just for that one.
-        const group = groupOf(key);
-        if (group && a < 0.5 && v === 1 && group.some(t => t !== key && GIFTS[i].traits.has(t))) v = a;
-        return w * (1 - 0.9 * Math.abs(a - v)); // never all the way to zero, so one slip isn't fatal
+        if (group && a < 0.5 && v === 1 && group.some(o => o !== t && GIFTS[i].traits.has(o))) v = a;
+        return w * broadFactor(q, a, v);
       });
     }
     return { budget: state.budget, weights, asked: state.asked.concat(key), answers: state.answers.concat(value) };
@@ -82,12 +123,26 @@ const GiftEngine = (function () {
     return asked.reduce((s, t, i) => answer(s, t, answers[i]), start(budget));
   }
 
-  // Questions that no longer need asking. Once an age gets a "yes", the other ages are settled.
-  // Consoles aren't, since people often own more than one.
+  // Questions that no longer need asking:
+  //  - a Yes to an age (or a strong age clue) settles every age question
+  //    (consoles aren't settled, since people often own more than one)
+  //  - once a trait has been asked about directly, its clues add nothing
+  //  - at most 2 questions per topic, so weak clues can't eat up a whole game
   function settled(state) {
     const done = new Set(state.asked);
-    const ageYes = state.asked.some((t, i) => AGE_TRAITS.includes(t) && (state.answers[i] === "yes" || state.answers[i] === "probably"));
-    if (ageYes) AGE_TRAITS.forEach(t => done.add(t));
+    const perTrait = {};
+    let ageYes = false;
+    state.asked.forEach((key, i) => {
+      const q = BROAD[key];
+      if (!q) return;
+      perTrait[q.trait] = (perTrait[q.trait] || 0) + 1;
+      const yes = state.answers[i] === "yes" || state.answers[i] === "probably";
+      if (yes && AGE_TRAITS.includes(q.trait) && q.yes >= 0.8) ageYes = true;
+    });
+    BROAD_KEYS.forEach(key => {
+      const t = BROAD[key].trait;
+      if ((ageYes && AGE_TRAITS.includes(t)) || done.has(t) || perTrait[t] >= 2) done.add(key);
+    });
     return done;
   }
 
@@ -99,13 +154,14 @@ const GiftEngine = (function () {
 
   // Every question that could be asked now, with its expected spread after the
   // answer (lower is better).
-  function scoreQuestions(state, skip) {
+  function scoreQuestions(state, skip, rand = Math.random) {
     const done = settled(state);
     const ws = state.weights;
     const total = ws.reduce((a, b) => a + b, 0);
     const scores = [];
-    TRAIT_KEYS.forEach(t => {
-      if (done.has(t) || skip.has(t)) return;
+    BROAD_KEYS.forEach(key => {
+      if (done.has(key) || skip.has(key)) return;
+      const q = BROAD[key], t = q.trait;
       const f = FIT[t];
       const group = groupOf(t);
       // Spread after a "yes" and after a "no", without copying the weights.
@@ -114,55 +170,70 @@ const GiftEngine = (function () {
         const w = ws[i];
         if (w <= 0) continue;
         const v = f[i];
-        pYes += w * v;
-        const wy = w * (1 - 0.9 * (1 - v));
+        // A weak clue is answered "yes" less predictably than the trait itself.
+        pYes += w * (0.5 + (v - 0.5) * (q.yes + q.no) / 2);
+        const wy = w * broadFactor(q, 1, v);
         // A "no" to an age or console spares gifts that also suit another one.
         const vNo = group && v === 1 && group.some(o => o !== t && GIFTS[i].traits.has(o)) ? 0 : v;
-        const wn = w * (1 - 0.9 * vNo);
+        const wn = w * broadFactor(q, 0, vNo);
         sY += wy; lY += wy * Math.log2(wy);
         sN += wn; lN += wn * Math.log2(wn);
       }
       pYes /= total;
       const hY = Math.log2(sY) - lY / sY, hN = Math.log2(sN) - lN / sN;
-      scores.push([t, pYes * hY + (1 - pYes) * hN]);
+      scores.push([key, pYes * hY + (1 - pYes) * hN]);
     });
-    // Gift questions only help for gifts still in the running, so score the top 40.
-    // Changing one weight lets the spread be worked out without copying every weight.
-    const sumWLog = ws.reduce((s, w) => (w > 0 ? s + w * Math.log2(w) : s), 0);
-    const spreadIf = (w, w2) => {
-      const t2 = total - w + w2;
-      const l2 = sumWLog - (w > 0 ? w * Math.log2(w) : 0) + (w2 > 0 ? w2 * Math.log2(w2) : 0);
-      return Math.log2(t2) - l2 / t2;
-    };
-    ws.map((w, i) => [w, i]).sort((a, b) => b[0] - a[0]).slice(0, 40).forEach(([w, i]) => {
-      const key = GIFTS[i].id;
-      if (w <= 0 || done.has(key) || skip.has(key)) return;
-      const pYes = Math.min(0.9, w / total + 0.1); // other gifts could suit them too
-      scores.push([key, pYes * spreadIf(w, w * OWN.yes) + (1 - pYes) * spreadIf(w, w * OWN.no)]);
+    // Gift questions: score the 120 likeliest gifts' questions, plus 60 others at random.
+    const order = ws.map((w, i) => [w, i]).sort((x, y) => y[0] - x[0]).map(x => x[1]);
+    const cands = new Set(order.slice(0, 120));
+    for (let tries = 0; tries < 60; tries++) cands.add(order[120 + Math.floor(rand() * Math.max(0, order.length - 120))]);
+    cands.forEach(k => {
+      if (k === undefined || ws[k] <= 0) return;
+      const key = GIFTS[k].id;
+      if (done.has(key) || skip.has(key)) return;
+      const rel = related(k);
+      let pYes = 0, sY = 0, lY = 0, sN = 0, lN = 0;
+      for (let i = 0; i < ws.length; i++) {
+        const w = ws[i];
+        if (w <= 0) continue;
+        // Chance they'd say yes if gift i were the right one.
+        pYes += w * (i === k ? 0.9 : rel[i] < 0 ? 0.02 : 0.03 + 0.35 * rel[i]);
+        const wy = w * ownFactor(1, "yes", k, i, rel), wn = w * ownFactor(0, "no", k, i, rel);
+        sY += wy; lY += wy * Math.log2(wy);
+        sN += wn; lN += wn * Math.log2(wn);
+      }
+      pYes /= total;
+      scores.push([key, pYes * (Math.log2(sY) - lY / sY) + (1 - pYes) * (Math.log2(sN) - lN / sN)]);
     });
     return scores.sort((a, b) => a[1] - b[1]);
   }
 
-  // The next question. Picks at random among the best few, skipping questions in
-  // "seen" (from earlier games) while there are enough others to choose from.
+  // The next question. Every question is scored by its information gain: how
+  // much it's expected to narrow down the gifts. The elf picks at random among
+  // the questions that are nearly as good as the best one, preferring ones not in
+  // "seen" (asked in earlier games). If every good question has been seen, it
+  // asks the best unseen one, unless that's much worse.
   // After a "No", the elf never asks what it would have asked after a "Yes".
-  function nextQuestion(state, seen = new Set(), rand = Math.random) {
-    const skip = new Set(seen);
+  function nextQuestion(state, seen = new Set(), rand = Math.random, goodEnough = GOOD_ENOUGH, freshFloor = FRESH_FLOOR) {
+    const skip = new Set();
     const n = state.asked.length;
     const last = state.answers[n - 1];
     if (last === "no" || last === "probablyNot") {
       const before = replay(state.budget, state.asked.slice(0, -1), state.answers.slice(0, -1));
-      const ifYes = scoreQuestions(answer(before, state.asked[n - 1], "yes"), new Set())[0];
+      const ifYes = scoreQuestions(answer(before, state.asked[n - 1], "yes"), new Set(), rand)[0];
       if (ifYes) skip.add(ifYes[0]);
     }
-    let scores = scoreQuestions(state, skip);
-    if (scores.length < BROAD_CHOICES + GIFT_CHOICES) scores = scoreQuestions(state, new Set());
+    const scores = scoreQuestions(state, skip, rand);
     if (!scores.length) return null;
-    const broad = scores.filter(([k]) => !isGiftQuestion(k)).slice(0, BROAD_CHOICES);
-    const gifts = scores.filter(([k]) => isGiftQuestion(k)).slice(0, GIFT_CHOICES);
-    let pick = n < BROAD_START && broad.length ? broad : broad.concat(gifts);
-    if (!pick.length) pick = scores.slice(0, 1);
-    return pick[Math.floor(rand() * pick.length)][0];
+    const now = ENTROPY(state.weights);
+    const gains = scores.map(([k, h]) => [k, now - h]);
+    const best = gains[0][1];
+    const good = gains.filter(([, g]) => g >= best * goodEnough);
+    const fresh = good.filter(([k]) => !seen.has(k));
+    if (fresh.length) return fresh[Math.floor(rand() * fresh.length)][0];
+    const bestFresh = gains.find(([k]) => !seen.has(k));
+    if (bestFresh && bestFresh[1] >= best * freshFloor) return bestFresh[0];
+    return good[Math.floor(rand() * good.length)][0];
   }
 
   // Gifts ranked best first, with how likely each one is.
@@ -182,8 +253,10 @@ const GiftEngine = (function () {
   // The questions the player said yes to that this gift fits, for "why this gift".
   function reasons(state, gift) {
     return state.asked.filter((t, i) => (state.answers[i] === "yes" || state.answers[i] === "probably") &&
-      (gift.traits.has(t) || t === gift.id));
+      (t === gift.id || (BROAD[t] && gift.traits.has(BROAD[t].trait))));
   }
 
-  return { TRAIT_KEYS, ALL_KEYS, ANSWERS, questionText, isGiftQuestion, fit, start, answer, replay, settled, nextQuestion, ranked, confidence, reasons };
+  const traitOf = key => (BROAD[key] ? BROAD[key].trait : key);
+
+  return { TRAIT_KEYS, BROAD_KEYS, ALL_KEYS, traitOf, ANSWERS, questionText, isGiftQuestion, fit, start, answer, replay, settled, nextQuestion, ranked, confidence, reasons };
 })();

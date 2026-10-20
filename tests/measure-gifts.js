@@ -19,7 +19,7 @@ const path = require("path");
 const root = path.join(__dirname, "..");
 const g = {};
 new Function("g", ["gifts.js", "gift-engine.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n") +
-  ";g.E=GiftEngine;g.P=PLATFORM_TRAITS;g.G=GIFTS;g.A=AGE_TRAITS;g.T=TRAITS")(g);
+  ";g.E=GiftEngine;g.C=CLUES;g.P=PLATFORM_TRAITS;g.G=GIFTS;g.A=AGE_TRAITS;g.T=TRAITS")(g);
 const AGE = g.A;
 const nArg = process.argv.indexOf("--n");
 const N = nArg > 0 ? +process.argv[nArg + 1] : 16;
@@ -49,15 +49,24 @@ function makePerson(gift) {
 
 function reply(person, trait, gift) {
   const r = rand();
-  // A gift's own question: yes for the gift we started from, and now and then
-  // for another gift that shares one of their interests.
+  // A gift's own question: yes for the gift we started from; for another gift,
+  // sometimes yes if it suits their age and interests.
   if (g.E.isGiftQuestion(trait)) {
     if (trait === gift.id) return r < 0.8 ? "yes" : r < 0.95 ? "probably" : "unsure";
     const other = g.G.find(x => x.id === trait);
-    const shares = [...other.traits].some(t => !NOT_INTEREST.has(t) && person.has.has(t));
-    return shares && r < 0.15 ? "probably" : r < 0.7 ? "no" : r < 0.9 ? "probablyNot" : "unsure";
+    const likes = [...other.traits].filter(t => !NOT_INTEREST.has(t));
+    const ageOk = !AGE.some(a => other.traits.has(a)) || other.traits.has(person.age);
+    const share = ageOk && likes.length ? likes.filter(t => person.has.has(t)).length / likes.length : 0;
+    // The more of that gift's interests they share, the likelier a yes.
+    return r < 0.3 * share ? "yes" : r < 0.45 * share ? "probably" : r < 0.75 ? "no" : r < 0.92 ? "probablyNot" : "unsure";
   }
-  if (person.has.has(trait)) return r < 0.75 ? "yes" : r < 0.92 ? "probably" : "unsure";
+  // A clue question: a weak clue doesn't always match the person. Someone who
+  // isn't a child almost never leaves out cookies for Santa, but plenty of
+  // children don't either.
+  let has = person.has.has(g.E.traitOf(trait));
+  const clue = g.C.find(c => c.id === trait);
+  if (clue) has = has ? rand() < 1 - 0.6 * (1 - clue.no) : rand() < 0.6 * (1 - clue.yes);
+  if (has) return r < 0.75 ? "yes" : r < 0.92 ? "probably" : "unsure";
   return r < 0.65 ? "no" : r < 0.88 ? "probablyNot" : r < 0.96 ? "unsure" : "probably";
 }
 

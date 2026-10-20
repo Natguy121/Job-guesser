@@ -52,6 +52,180 @@ const TRAITS = {
   relax:       "Do they need more time to relax?",
   experience:  "Would they rather do something special than get a thing?",
 };
+// Clue questions: different facts that hint at a trait. "trait | yes | no | question":
+// how strongly a Yes points to the trait, and how strongly a No points away from it
+// (from 0, no clue, to 1, as sure as asking about the trait itself). A Yes to
+// "Do they still believe in Santa?" all but says they're a child; a No says little.
+const CLUES = `
+kid | 0.95 | 0.3 | Do they leave out cookies for Santa?
+kid | 0.95 | 0.7 | Do they go to primary school?
+kid | 0.85 | 0.3 | Do they still have a bedtime story?
+kid | 0.8 | 0.3 | Have they lost a baby tooth recently?
+kid | 0.85 | 0.4 | Do they need a booster seat in the car?
+kid | 0.8 | 0.3 | Do they write a letter to Santa every year?
+kid | 0.7 | 0.3 | Do they still play with toys?
+kid | 0.8 | 0.3 | Do they get pocket money?
+kid | 0.8 | 0.3 | Do they watch cartoons every morning?
+teen | 0.95 | 0.8 | Are they in high school?
+teen | 0.7 | 0.3 | Do they spend hours on TikTok or Snapchat?
+teen | 0.8 | 0.3 | Are they learning to drive?
+teen | 0.6 | 0.3 | Do they sleep in until noon at weekends?
+teen | 0.8 | 0.4 | Are they studying for big exams this year?
+teen | 0.6 | 0.3 | Do they roll their eyes at their parents?
+teen | 0.6 | 0.3 | Do they have a part-time job or babysit?
+teen | 0.7 | 0.3 | Do they want to stay in their room most of the time?
+adult | 0.85 | 0.5 | Do they go to work every day?
+adult | 0.9 | 0.6 | Do they pay rent or a mortgage?
+adult | 0.7 | 0.3 | Do they have kids of their own?
+adult | 0.7 | 0.4 | Do they drive themselves everywhere?
+adult | 0.6 | 0.3 | Do they complain about their commute?
+adult | 0.7 | 0.3 | Do they have their own flat or house?
+adult | 0.6 | 0.3 | Do they go to after-work drinks?
+senior | 0.9 | 0.5 | Do they have grandchildren?
+senior | 0.9 | 0.7 | Are they retired?
+senior | 0.7 | 0.3 | Do they still send Christmas cards by post?
+senior | 0.6 | 0.3 | Do they read a printed newspaper?
+senior | 0.6 | 0.3 | Do they need reading glasses?
+senior | 0.6 | 0.3 | Do they ask you for help with their phone?
+senior | 0.7 | 0.3 | Do they talk about the good old days?
+outdoors | 0.8 | 0.4 | Do they go out whatever the weather?
+outdoors | 0.7 | 0.3 | Do they take a walk every day?
+outdoors | 0.8 | 0.3 | Have they slept in a tent this year?
+outdoors | 0.6 | 0.3 | Do they love the beach?
+outdoors | 0.7 | 0.3 | Do they know the names of trees and plants on walks?
+sporty | 0.8 | 0.4 | Do they play on a team?
+sporty | 0.8 | 0.4 | Do they shout at the TV when their team plays?
+sporty | 0.7 | 0.3 | Do they know the league table by heart?
+sporty | 0.7 | 0.3 | Do they have a favourite athlete?
+sporty | 0.6 | 0.3 | Do they wear sportswear most days?
+fitness | 0.8 | 0.4 | Do they work out more than three times a week?
+fitness | 0.7 | 0.3 | Have they ever run a race or marathon?
+fitness | 0.7 | 0.3 | Do they track their steps or calories?
+fitness | 0.6 | 0.3 | Do they eat lots of protein?
+gamer | 0.85 | 0.6 | Do they talk about video games a lot?
+gamer | 0.9 | 0.5 | Do they play games online with friends?
+gamer | 0.7 | 0.3 | Do they watch gaming videos or streams?
+gamer | 0.6 | 0.3 | Do they stay up late playing games?
+nintendo | 0.7 | 0.3 | Do they love Mario?
+nintendo | 0.6 | 0.3 | Do they play games on the go, on a handheld?
+playstation | 0.6 | 0.3 | Do they love big blockbuster story games?
+xbox | 0.6 | 0.3 | Do they have a gaming computer?
+techie | 0.8 | 0.4 | Do they always have the newest phone?
+techie | 0.7 | 0.3 | Do people ask them to fix their computers?
+techie | 0.7 | 0.3 | Do they read reviews before buying any gadget?
+techie | 0.6 | 0.3 | Do they have lots of cables and chargers?
+reader | 0.8 | 0.4 | Do they always have a book on the go?
+reader | 0.7 | 0.3 | Do they visit the library or bookshops?
+reader | 0.7 | 0.3 | Are they in a book club?
+reader | 0.6 | 0.3 | Do they read before bed?
+crafty | 0.8 | 0.4 | Do they make their own gifts?
+crafty | 0.7 | 0.3 | Do they have a drawer full of craft supplies?
+crafty | 0.7 | 0.3 | Do they watch "how to make" videos?
+artsy | 0.8 | 0.4 | Do they doodle on everything?
+artsy | 0.7 | 0.3 | Do they visit art galleries?
+artsy | 0.7 | 0.3 | Do they have a sketchbook?
+music | 0.8 | 0.4 | Do they play an instrument?
+music | 0.7 | 0.3 | Do they always have headphones on?
+music | 0.7 | 0.3 | Do they have a favourite band or singer?
+music | 0.6 | 0.3 | Do they sing along in the car?
+cook | 0.8 | 0.4 | Do they cook dinner most nights?
+cook | 0.7 | 0.3 | Do they watch cooking shows?
+cook | 0.7 | 0.3 | Do they host dinners for friends?
+cook | 0.6 | 0.3 | Do they have lots of spices?
+coffee | 0.8 | 0.4 | Do they drink more than two coffees a day?
+coffee | 0.7 | 0.3 | Do they have a favourite café?
+coffee | 0.7 | 0.3 | Do they drink tea all day?
+sweet | 0.8 | 0.4 | Do they always have dessert?
+sweet | 0.7 | 0.3 | Do they hide sweets in a drawer?
+sweet | 0.6 | 0.3 | Do they love baking treats?
+fashion | 0.8 | 0.4 | Do they follow fashion influencers?
+fashion | 0.7 | 0.3 | Do they always look put-together?
+fashion | 0.7 | 0.3 | Do they love shopping for clothes?
+fashion | 0.6 | 0.3 | Do they own lots of shoes?
+beauty | 0.8 | 0.4 | Do they have a long skincare routine?
+beauty | 0.7 | 0.3 | Do they wear makeup most days?
+beauty | 0.6 | 0.3 | Do they love getting their nails done?
+cosy | 0.8 | 0.4 | Is their perfect evening on the sofa?
+cosy | 0.7 | 0.3 | Do they wear pyjamas as soon as they get home?
+cosy | 0.6 | 0.3 | Do they love winter?
+travel | 0.8 | 0.4 | Have they been abroad in the last year?
+travel | 0.7 | 0.3 | Do they always have a trip planned?
+travel | 0.6 | 0.3 | Do they speak another language?
+pets | 0.95 | 0.6 | Do they have a dog?
+pets | 0.95 | 0.6 | Do they have a cat?
+pets | 0.7 | 0.3 | Do they post photos of their pet?
+animals | 0.8 | 0.4 | Do they stop to pet every dog they see?
+animals | 0.7 | 0.3 | Do they watch nature documentaries?
+animals | 0.6 | 0.3 | Do they want to work with animals?
+garden | 0.8 | 0.4 | Do they have a garden they look after?
+garden | 0.7 | 0.3 | Do they have lots of plants inside?
+garden | 0.6 | 0.3 | Do they grow their own vegetables?
+movies | 0.8 | 0.4 | Do they go to the cinema every month?
+movies | 0.7 | 0.3 | Do they quote films all the time?
+movies | 0.7 | 0.3 | Do they pay for several streaming services?
+puzzles | 0.8 | 0.4 | Do they do a crossword or sudoku every day?
+puzzles | 0.7 | 0.3 | Do they love riddles?
+puzzles | 0.6 | 0.3 | Do they never give up on a hard problem?
+building | 0.8 | 0.4 | Do they have LEGO on display?
+building | 0.7 | 0.3 | Do they love model kits?
+building | 0.6 | 0.3 | Do they enjoy following instructions to build things?
+science | 0.8 | 0.4 | Do they ask "why?" about everything?
+science | 0.7 | 0.3 | Do they watch space launches?
+science | 0.7 | 0.3 | Do they love science museums?
+cars | 0.8 | 0.4 | Do they know every car model on the road?
+cars | 0.7 | 0.3 | Do they watch motor racing?
+cars | 0.6 | 0.3 | Do they love going for a drive?
+collector | 0.8 | 0.4 | Do they have a shelf of figures or memorabilia?
+collector | 0.7 | 0.3 | Do they keep things in their boxes?
+collector | 0.6 | 0.3 | Do they buy limited editions?
+funny | 0.8 | 0.4 | Are they the joker of the family?
+funny | 0.7 | 0.3 | Do they laugh at their own jokes?
+funny | 0.6 | 0.3 | Do they share memes every day?
+sentimental | 0.8 | 0.4 | Do they keep cards and letters?
+sentimental | 0.7 | 0.3 | Do they cry at films?
+sentimental | 0.7 | 0.3 | Do they have family photos everywhere?
+practical | 0.8 | 0.4 | Do they say "don't get me anything"?
+practical | 0.7 | 0.3 | Do they prefer useful things to pretty things?
+practical | 0.6 | 0.3 | Do they make lists for everything?
+party | 0.8 | 0.4 | Are they always the first to arrive at a party?
+party | 0.7 | 0.3 | Do they host game nights?
+party | 0.6 | 0.3 | Do they love dancing?
+drinks | 0.8 | 0.4 | Do they have a drinks cabinet?
+drinks | 0.7 | 0.3 | Do they order something fancy at the bar?
+drinks | 0.6 | 0.3 | Do they go to wine or beer tastings?
+photo | 0.8 | 0.4 | Do they take photos of everything?
+photo | 0.7 | 0.3 | Do they edit their photos?
+photo | 0.6 | 0.3 | Do they post lots of photos online?
+diy | 0.8 | 0.4 | Do they have a toolbox?
+diy | 0.7 | 0.3 | Do they renovate or repair things at home?
+diy | 0.6 | 0.3 | Do they watch DIY videos?
+boardgames | 0.8 | 0.4 | Do they have a shelf of board games?
+boardgames | 0.7 | 0.3 | Do they play cards at family gatherings?
+boardgames | 0.6 | 0.3 | Do they love a family games night?
+home | 0.8 | 0.4 | Do they rearrange their furniture often?
+home | 0.7 | 0.3 | Do they love candles and cushions?
+home | 0.6 | 0.3 | Do they watch home makeover shows?
+relax | 0.8 | 0.4 | Are they always stressed or busy?
+relax | 0.7 | 0.3 | Do they wish they slept more?
+relax | 0.6 | 0.3 | Do they love a lazy Sunday?
+experience | 0.8 | 0.4 | Do they already have everything?
+experience | 0.7 | 0.3 | Do they love trying new things?
+experience | 0.6 | 0.3 | Do they talk about their bucket list?
+pokemon | 0.8 | 0.4 | Do they collect Pokémon cards?
+pokemon | 0.6 | 0.3 | Do they watch the Pokémon cartoon?
+starwars | 0.8 | 0.4 | Can they quote Star Wars?
+starwars | 0.6 | 0.3 | Do they love space battles in films?
+marvel | 0.8 | 0.4 | Have they seen every Marvel film?
+marvel | 0.6 | 0.3 | Do they love superheroes?
+harrypotter | 0.8 | 0.4 | Have they read all the Harry Potter books?
+harrypotter | 0.6 | 0.3 | Do they love wizards and magic?
+disney | 0.8 | 0.4 | Do they sing along to Disney songs?
+disney | 0.6 | 0.3 | Do they love Disney princesses?
+`.trim().split("\n").map((line, i) => {
+  const [trait, yes, no, question] = line.split("|").map(s => s.trim());
+  return { id: "c" + i, trait, yes: +yes, no: +no, question };
+});
+
 const AGE_TRAITS = ["kid", "teen", "adult", "senior"];
 // Consoles work like ages: a game that lists some consoles doesn't run on the others.
 const PLATFORM_TRAITS = ["nintendo", "playstation", "xbox"];

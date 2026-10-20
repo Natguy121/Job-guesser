@@ -37,7 +37,7 @@
   try { seen = new Set(JSON.parse(localStorage.getItem(SEEN_KEY)) || []); } catch (e) { /* no storage: start fresh */ }
   function remember(key) {
     seen.add(key);
-    if (GiftEngine.TRAIT_KEYS.filter(t => !seen.has(t)).length < 12) GiftEngine.TRAIT_KEYS.forEach(t => seen.delete(t));
+    if (GiftEngine.BROAD_KEYS.filter(t => !seen.has(t)).length < 30) GiftEngine.BROAD_KEYS.forEach(t => seen.delete(t));
     if (GiftEngine.ALL_KEYS.every(k => seen.has(k))) seen.clear();
     try { localStorage.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch (e) { /* fine without it */ }
   }
@@ -93,7 +93,7 @@
     $("giftName").textContent = best.name;
     $("giftWhy").textContent = best.why;
     $("giftPrice").textContent = `About $${best.price}`;
-    const why = GiftEngine.reasons(state, best).map(t => (t === best.id ? "you said they'd love it" : REASON[t])).filter(Boolean).slice(0, 3);
+    const why = GiftEngine.reasons(state, best).map(t => (t === best.id ? "you said they'd love it" : REASON[GiftEngine.traitOf(t)])).filter(Boolean).slice(0, 3);
     $("giftReasons").textContent = why.length ? `Why: ${why.join(", ")}.` : "";
     $("more").innerHTML = top.slice(1, 6).map(g => `
       <li><span class="m-emoji" aria-hidden="true">${g.emoji}</span>

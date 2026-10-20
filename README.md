@@ -8,7 +8,7 @@ A Christmas gift finder that plays like Akinator. Set your budget with the slide
 - **Two sliders** on the start screen: budget ($10 to no limit; gifts over budget are never suggested) and number of questions (5 to 30).
 - **48 questions**, one per trait ("Do they love being outdoors?", "Do they have a Nintendo Switch?", "Are they a Star Wars fan?").
 - **Akinator-style guessing** (`gift-engine.js`). Every gift starts equally likely. Each answer makes gifts that fit it more likely and the rest less likely (never to zero, so one slip isn't fatal). "Don't know" changes nothing.
-- **Smart questions.** Each question is the one expected to narrow the gifts down the most. Once you say "Yes" to an age, the other age questions are skipped. A "No" to an age or console only rules out gifts just for that one, so a game on every console survives "No" to Xbox.
+- **Smart, branching questions.** Each question is the one expected to narrow the gifts down the most, and every answer leads down its own path: after a "No", the elf never asks the question it would have asked after a "Yes". Once you say "Yes" to an age, the other age questions are skipped. A "No" to an age or console only rules out gifts just for that one, so a game on every console survives "No" to Xbox.
 - **The result** shows the top pick with the reasons it fits, five more ideas, and a "Not quite? Ask me 5 more" button.
 - A flat Christmas look: snowfall, a string of baubles that fills in as you answer, a candy-cane "How sure I am" bar, and an elf who reacts to your answers. Keys 1–5 answer, and Back undoes the last answer.
 

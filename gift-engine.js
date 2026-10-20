@@ -62,12 +62,13 @@ const GiftEngine = (function () {
     const total = ws.reduce((a, b) => a + b, 0);
     return -ws.reduce((h, w) => (w > 0 ? h + (w / total) * Math.log2(w / total) : h), 0);
   };
-  function nextQuestion(state) {
+  // The best question to ask from this state, skipping any in "avoid".
+  function bestQuestion(state, avoid) {
     const done = settled(state);
     const total = state.weights.reduce((a, b) => a + b, 0);
     let best = null, bestScore = Infinity;
     TRAIT_KEYS.forEach(t => {
-      if (done.has(t)) return;
+      if (done.has(t) || t === avoid) return;
       // Chance the player says yes (or no), given how likely each gift is.
       const pYes = state.weights.reduce((sum, w, i) => sum + w * fit(GIFTS[i], t), 0) / total;
       let expected = 0;
@@ -78,6 +79,17 @@ const GiftEngine = (function () {
       if (expected < bestScore) { bestScore = expected; best = t; }
     });
     return best;
+  }
+
+  // Every answer leads somewhere different: after a "No" (or "Probably not"),
+  // the elf never asks the question it would have asked after a "Yes".
+  function nextQuestion(state) {
+    const n = state.asked.length;
+    const last = state.answers[n - 1];
+    if (last !== "no" && last !== "probablyNot") return bestQuestion(state);
+    const before = replay(state.budget, state.asked.slice(0, -1), state.answers.slice(0, -1));
+    const ifYes = bestQuestion(answer(before, state.asked[n - 1], "yes"));
+    return bestQuestion(state, ifYes) || bestQuestion(state);
   }
 
   // Gifts ranked best first, with how likely each one is.
